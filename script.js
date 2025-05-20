@@ -16,7 +16,7 @@ fetch('templates/header.html')
         console.error('Erro:', error);
 });
 
-fetch('pages/servicos.html')
+fetch('pages/clientes.html')
     .then(response => {
         if (!response.ok) {
         throw new Error('Erro ao carregar a sidebar');
