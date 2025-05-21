@@ -22,6 +22,7 @@ header{
     align-items: center;
     justify-content: space-between;
     width: calc(100% - 220px);
+    transition: all 0.5s ease;
 }
 
 header .menu{
@@ -33,7 +34,6 @@ header .menu{
     align-items: center;
     border-radius: 100%;
     cursor: pointer;
-    transition: all 0.2s ease;
 }
 
 .menu i{
@@ -42,6 +42,11 @@ header .menu{
 
 .menu:hover{
     transform: scale(1.1);
+}
+
+.full{
+    margin-left: 0 !important;
+    width: 100% !important;
 }
 
 header h2{
@@ -69,11 +74,13 @@ header .user{
 }
 
 .sidebar {
+    overflow: hidden;
     width: 220px;
     height: 100vh;
     background-color: #007BFF;
     color: white;
     position: fixed;
+    transition: width 0.5s ease;
 }
 
 .sidebar h2 {
@@ -93,7 +100,7 @@ header .user{
     padding: 12px 16px;
     cursor: pointer;
     font-size: 20px;
-    transition: background-color 0.3s;
+    transition: all 0.3s ease;
 }
 
 .sidebar li i{
@@ -105,19 +112,33 @@ header .user{
     background-color: #339CFF;
 }
 
+.sidebar li.active:hover{
+    background-color: #0466cf;
+}
+
 li.active{
     background-color: #0466cf;
     padding: 16px 16px;
 }
 
+.sidebar.hidden{
+    width: 0;
+}
+
 .content {
+    padding-top: 90px !important;
     margin-left: 220px;
     padding: 2rem;
     width: calc(100% - 220px);
+    transition: all 0.5s ease;
 }
 
 .content h2 {
     margin-bottom: 20px;
+}
+
+.tableContent h2{
+    color: #8C8C8C;
 }
 
 .dashboard-cards {
@@ -142,7 +163,7 @@ li.active{
 
 .card-box p {
     margin: 0;
-    color: #555;
+    color: #8C8C8C;
 }
 
 .btn {
@@ -173,10 +194,13 @@ table {
     border-collapse: collapse;
     margin-top: 20px;
     background-color: white;
+    border-radius: 8px;
+    overflow: hidden; /* Ensures rounded corners are visible */
 }
 
 th,
 td {
+    cursor: default;
     padding: 12px;
     text-align: left;
     border-bottom: 1px solid #ddd;
@@ -187,24 +211,29 @@ thead {
     color: white;
 }
 
-.status-dot {
-    height: 10px;
-    width: 10px;
-    border-radius: 50%;
-    display: inline-block;
-    margin-right: 6px;
+tbody tr {
+    transition: background-color 0.3s;
 }
 
-.green {
-    background-color: green;
+tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
 }
 
-.orange {
-    background-color: orange;
+tbody tr:hover {
+    background-color: #e0f7fa;
 }
 
-.red {
-    background-color: red;
+.btn {
+    padding: 8px 16px; 
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.btn:hover {
+    opacity: 0.9;
 }
 
 .pagination {
