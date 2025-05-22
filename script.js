@@ -25,6 +25,17 @@ Promise.all([
             pagePlaceholder.innerHTML = data;
         }),
 
+        fetch("pages/vendas.html")
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error("Erro ao carregar a página clientes");
+            }
+            return response.text();
+        })
+        .then((data) => {
+            pagePlaceholder.innerHTML = data;
+        }),
+
     fetch("templates/sidebar.html")
         .then((response) => {
             if (!response.ok) {
@@ -48,6 +59,7 @@ function initializeCode() {
     const headerMenu = document.querySelector("header");
     const sidebar = document.querySelector(".sidebar");
     const sidebarBtns = document.querySelectorAll("#sidebarBtn");
+  
 
     var page = document.querySelector(".content");
     
@@ -59,17 +71,31 @@ function initializeCode() {
     }
 
     function changePage(redPage) {
-        fetch("pages/"+ redPage +".html")
+        fetch("pages/" + redPage + ".html")
             .then((response) => {
-                if(!response.ok)
-                {
-                    throw new Error("Error ao carregar a página " + redPage);
+                if (!response.ok) {
+                    throw new Error("Erro ao carregar a página " + redPage);
                 }
                 return response.text();
             })
             .then((data) => {
                 pagePlaceholder.innerHTML = data;
                 page = document.querySelector(".content");
+                const pageTitle = document.getElementById("page-title");
+                if (redPage === "clientes") {
+                    pageTitle.textContent = "Clientes";
+                } else if (redPage === "vendas") {
+                    pageTitle.textContent = "Vendas";
+                } else if (redPage === "produtos") {
+                    pageTitle.textContent = "Produtos";
+                }
+                else if (redPage === "servicos") {
+                    pageTitle.textContent = "Serviços";
+                }
+                else {
+                    pageTitle.textContent = "";
+                }
+                
             });
     }
 
@@ -97,3 +123,4 @@ function initializeCode() {
         });
     });
 }
+
