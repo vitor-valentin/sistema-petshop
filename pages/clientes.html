@@ -1,81 +1,38 @@
-<div class="content">
-  <div class="dashboard-cards">
-    <div class="card-box">
-      <h4><i class="bi bi-person-check"></i> Cadastrados</h4>
-      <p>47 Clientes</p>
+<div id="Clientes" class="content">
+    <div class="dashboard-cards">
+        <div id="registered" class="card-box">
+            <h4>Cadastrados</h4>
+            <p></p>
+        </div>
+        <div id="birthdays" class="card-box">
+            <h4>Aniversariantes</h4>
+            <p>1 Este Mês</p>
+        </div>
+        <div id="bought" class="card-box">
+            <h4>Compradores do Mês</h4>
+            <p>0 Este Mês</p>
+        </div>
     </div>
-    <div class="card-box">
-      <h4><i class="bi bi-calendar-event"></i> Aniversariantes</h4>
-      <p>1 Este Mês</p>
-    </div>
-    <div class="card-box">
-      <h4><i class="bi bi-person-x"></i> Realizaram um serviço</h4>
-      <p>0 Este Mês</p>
-    </div>
-    <div class="card-box">
-      <h4><i class="bi bi-exclamation-circle"></i> Pendentes</h4>
-      <p>3 Sem Cadastro Completo</p>
-    </div>
-  </div>
 
+    <div class="tableContent">
+        <h2>Lista de Clientes</h2>
+        <button class="btn btn-primary">Adicionar Cliente</button>
 
-  <div class="tableContent">
-    <h2>Lista de Clientes</h2>
-    <button class="btn btn-primary">Adicionar Cliente</button>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Telefone</th>
+                    <th>Email</th>
+                    <th>Cpf</th>
+                    <th>Sexo</th>
+                    <th>Data de Nascimento</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Nome</th>
-          <th>Telefone</th>
-          <th>Email</th>
-          <th>Pet</th>
-          <th>Espécie</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Maria Oliveira</td>
-          <td>(11) 99999-9999</td>
-          <td>maria@email.com</td>
-          <td>Rex</td>
-          <td>Cachorro</td>
-          <td>
-            <button class="btn btn-warning">Editar</button>
-            <button class="btn btn-danger">Excluir</button>
-          </td>
-        </tr>
-        <tr>
-          <td>João Souza</td>
-          <td>(11) 98888-8888</td>
-          <td>joao@email.com</td>
-          <td>Mimi</td>
-          <td>Gato</td>
-          <td>
-            <button class="btn btn-warning">Editar</button>
-            <button class="btn btn-danger">Excluir</button>
-          </td>
-        </tr>
-        <tr>
-          <td>Fernanda Lima</td>
-          <td>(21) 97777-7777</td>
-          <td>fernanda@email.com</td>
-          <td>Tobby</td>
-          <td>Cachorro</td>
-          <td>
-            <button class="btn btn-warning">Editar</button>
-            <button class="btn btn-danger">Excluir</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    <div class="pagination">
-      <button>&laquo;</button>
-      <button class="active">1</button>
-      <button>2</button>
-      <button>3</button>
-      <button>&raquo;</button>
+        <div class="pagination"></div>
     </div>
-  </div>
+</div>
