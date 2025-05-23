@@ -324,3 +324,78 @@ function initializeCode() {
         });
     });
 }
+
+const porPagina = 4;
+  let paginaAtual = 1;
+
+  function renderTabelaProdutos() {
+    const tbody = document.getElementById('tabela-produtos');
+    tbody.innerHTML = '';
+
+    const inicio = (paginaAtual - 1) * porPagina;
+    const fim = inicio + porPagina;
+    const pagina = produtos.slice(inicio, fim);
+
+    pagina.forEach((p, i) => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${p.nome}</td>
+        <td>${p.categoria}</td>
+        <td>R$ ${p.preco.toFixed(2)}</td>
+        <td>${p.estoque}</td>
+        <td>
+          <button class="btn btn-warning" onclick="editarProduto(${inicio + i})">Editar</button>
+          <button class="btn btn-danger" onclick="excluirProduto(${inicio + i})">Excluir</button>
+        </td>
+      `;
+      tbody.appendChild(row);
+    });
+
+    renderPaginacaoProdutos();
+    atualizarCardsProdutos();
+  }
+
+  function renderPaginacaoProdutos() {
+    const pag = document.getElementById('paginacao-produtos');
+    pag.innerHTML = '';
+    const totalPaginas = Math.ceil(produtos.length / porPagina);
+
+    for (let i = 1; i <= totalPaginas; i++) {
+      const btn = document.createElement('button');
+      btn.innerText = i;
+      btn.className = (i === paginaAtual) ? 'active' : '';
+      btn.onclick = () => {
+        paginaAtual = i;
+        renderTabelaProdutos();
+      };
+      pag.appendChild(btn);
+    }
+  }
+
+  function editarProduto(index) {
+    alert("Editar produto: " + produtos[index].nome);
+  }
+
+  function excluirProduto(index) {
+    if (confirm(`Deseja excluir o produto "${produtos[index].nome}"?`)) {
+      produtos.splice(index, 1);
+      if ((paginaAtual - 1) * porPagina >= produtos.length) {
+        paginaAtual = Math.max(1, paginaAtual - 1);
+      }
+      renderTabelaProdutos();
+    }
+  }
+
+  function atualizarCardsProdutos() {
+    const total = produtos.length;
+    const estoqueTotal = produtos.reduce((sum, p) => sum + p.estoque, 0);
+    const valorTotal = produtos.reduce((sum, p) => sum + (p.estoque * p.preco), 0);
+    const esgotados = produtos.filter(p => p.estoque === 0).length;
+
+    document.getElementById('totalCount').textContent = total;
+    document.getElementById('stockCount').textContent = `${estoqueTotal} Unidades`;
+    document.getElementById('valueSum').textContent = `R$ ${valorTotal.toFixed(2)}`;
+    document.getElementById('outCount').textContent = esgotados;
+  }
+
+  renderTabelaProdutos();

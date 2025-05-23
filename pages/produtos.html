@@ -1,0 +1,40 @@
+<div id="Produtos" class="content">
+  <div class="dashboard-cards">
+    <div id="totalProducts" class="card-box">
+      <h4>Produtos Cadastrados</h4>
+      <p id="totalCount">0</p>
+    </div>
+    <div id="totalStock" class="card-box">
+      <h4>Estoque Total</h4>
+      <p id="stockCount">0 Unidades</p>
+    </div>
+    <div id="totalValue" class="card-box">
+      <h4>Valor Total em Estoque</h4>
+      <p id="valueSum">R$ 0,00</p>
+    </div>
+    <div id="outOfStock" class="card-box">
+      <h4>Produtos Esgotados</h4>
+      <p id="outCount">0</p>
+    </div>
+  </div>
+
+  <div class="tableContent">
+    <h2>Lista de Produtos</h2>
+    <button class="btn btn-primary" onclick="alert('Função para adicionar produto')">Novo Produto</button>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Categoria</th>
+          <th>Preço</th>
+          <th>Estoque</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="tabela-produtos"></tbody>
+    </table>
+
+    <div class="pagination" id="paginacao-produtos"></div>
+  </div>
+</div>

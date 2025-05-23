@@ -3,7 +3,7 @@
 //Valid Logins:
 localStorage.setItem("vpValidLogins", JSON.stringify([
     { username: "Vitor", password: "123456" },
-    { username: "Eduardo", password: "CastanhasSaoLegais" }
+    { username: "Eduardo", password: "123456" }
 ]));
 
 //Logins Info:
@@ -19,7 +19,7 @@ localStorage.setItem("vpLoginsInfo", JSON.stringify([
         id: 2,
         username: "Eduardo",
         email: "eduardo@gmail.com",
-        password: "CastanhasSaoLegais",
+        password: "123456",
         role: "Doutor Veterinário"
     }
 ]));
