@@ -98,7 +98,9 @@ function loginPage() {
             const login = { username, password };
 
             localStorage.setItem("vpLogin", JSON.stringify(login));
-            alert("Login realizado com sucesso!");
+            
+            //TODO: Add success message.
+            location.reload();
         } else {
             alert("Usuário ou senha inválidos!");
         }
@@ -246,20 +248,20 @@ function initializeCode() {
 
     function updateDashboardCard(cardId, valueText) {
         const card = document.getElementById(cardId);
-        if(!card) return;
+        if (!card) return;
 
         const text = card.querySelector("p");
 
-        if(text) text.textContent = valueText;
+        if (text) text.textContent = valueText;
     }
 
     function updateCountDataDashboards(dataName, pageName) {
         const data = JSON.parse(localStorage.getItem(dataName));
-        if(!data) return;
-        
+        if (!data) return;
+
         const countDashboards = {
             clientes: "registered",
-            vendas: "totalSales"
+            vendas: "totalSales",
             //TODO: Insert the remaining dashboard ids
         };
 
@@ -267,9 +269,62 @@ function initializeCode() {
         updateDashboardCard(countDashboards[pageName.toLowerCase()], value);
     }
 
+    function isCurrentMonth(dateString, birthday = true) {
+        const currentMonth = new Date().getMonth() + 1;
+        const currentYear = new Date().getFullYear();
+        const [day, month, year] = dateString.split("/");
+
+        return parseInt(month, 10) === currentMonth;
+    }
+
+    function countBirthdays() {
+        const data = JSON.parse(localStorage.getItem("vpClientes")) || [];
+        if (!data) return;
+
+        let amountBirthdays = 0;
+
+        data.forEach((item) => {
+            if (isCurrentMonth(item.birthDate)) amountBirthdays++;
+        });
+
+        return amountBirthdays;
+    }
+
+    function monthBuyers() {
+        const sales = JSON.parse(localStorage.getItem("vpVendas")) || [];
+        if (!sales) return;
+
+        let buyersId = [];
+
+        sales.forEach((item) => {
+            if (!buyersId.includes(item.idCliente) && isCurrentMonth(item.soldDate, false)) {
+                buyersId.push(item.idCliente);
+            }
+        });
+
+        return buyersId.length;
+    }
+
+    function updateSectionCards(pTitle) {
+        updateCountDataDashboards("vp" + pTitle, pageTitle.textContent);
+
+        switch (pTitle) {
+            case "Clientes":
+                updateDashboardCard(
+                    "birthdays",
+                    countBirthdays() + " Este Mês"
+                );
+                updateDashboardCard(
+                    "bought",
+                    monthBuyers() + " Este Mês"
+                );
+                break;
+        }
+    }
+
     renderTable(tableOptions);
     renderPagination();
-    updateCountDataDashboards("vpClientes", pageTitle.textContent);
+    updateSectionCards("Clientes");
 
     function toggleSideBar() {
         sidebar.classList.toggle("hidden");
@@ -289,7 +344,10 @@ function initializeCode() {
                 pagePlaceholder.innerHTML = data;
                 requestAnimationFrame(() => {
                     page = document.querySelector(".content");
-                    const pTitle = capitalizeFirstLetter(redPage);
+                    var pTitle = capitalizeFirstLetter(redPage);
+                    if (redPage === "servicos") {
+                        pTitle = "Serviços";
+                    }
                     pageTitle.textContent = pTitle;
 
                     paginationContainer = document.querySelector(".pagination");
@@ -297,7 +355,7 @@ function initializeCode() {
 
                     renderTable(tableOptions);
                     renderPagination();
-                    updateCountDataDashboards("vp"+pTitle, pageTitle.textContent);
+                    updateSectionCards(pTitle);
                 });
             });
     }
