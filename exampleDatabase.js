@@ -2,8 +2,20 @@
 
 //Valid Logins:
 localStorage.setItem("vpValidLogins", JSON.stringify([
-    { username: "Vitor", password: "123456" },
-    { username: "Eduardo", password: "CastanhasSaoLegais" }
+    { 
+        id: 1,
+        username: "Vitor", 
+        email: "vitor.rohling.becker@gmail.com", 
+        password: "123456",
+        role: "Gerente"
+    },
+    {
+        id: 2,
+        username: "Eduardo",
+        email: "eduardo@gmail.com",
+        password: "CastanhasSaoLegais",
+        role: "Doutor Veterinário"
+    }
 ]));
 
 //Logins Info:
@@ -69,7 +81,7 @@ localStorage.setItem("vpClientes", JSON.stringify([
         email: "ana.clara@email.com",
         cpf: "111.111.111-11",
         gender: "Feminino",
-        birthDate: "02/09/2000"
+        birthDate: "02/05/2000"
     },
     {
         id: 6,
@@ -78,7 +90,7 @@ localStorage.setItem("vpClientes", JSON.stringify([
         email: "bruno@email.com",
         cpf: "123.456.789-00",
         gender: "Masculino",
-        birthDate: "30/11/1992"
+        birthDate: "30/05/1992"
     },
     {
         id: 7,
@@ -115,5 +127,113 @@ localStorage.setItem("vpClientes", JSON.stringify([
         cpf: "567.890.123-45",
         gender: "Masculino",
         birthDate: "11/07/1993"
+    }
+]));
+
+//Vendas
+localStorage.setItem("vpVendas", JSON.stringify([
+    {
+        id: 1,
+        idCliente: 1,
+        soldDate: "12/05/2025",
+        products: {
+            1: {
+                idProduct: 1,
+                amount: 3
+            },
+            2:  {
+                idProduct: 2,
+                amount: 1
+            }
+        },
+        services: {
+            1: {
+                idService: 1
+            }
+        },
+        totalValue: 500.00
+    },
+    {
+        id: 2,
+        idCliente: 3,
+        soldDate: "15/05/2025",
+        products: {
+            1: {
+                idProduct: 1,
+                amount: 3
+            },
+            2:  {
+                idProduct: 2,
+                amount: 1
+            }
+        },
+        services: {
+            1: {
+                idService: 1
+            }
+        },
+        totalValue: 500.00
+    },
+    {
+        id: 3,
+        idCliente: 8,
+        soldDate: "15/03/2025",
+        products: {
+            1: {
+                idProduct: 1,
+                amount: 3
+            },
+            2:  {
+                idProduct: 2,
+                amount: 1
+            }
+        },
+        services: {
+            1: {
+                idService: 1
+            }
+        },
+        totalValue: 500.00
+    },
+    {
+        id: 4,
+        idCliente: 1,
+        soldDate: "15/05/2025",
+        products: {
+            1: {
+                idProduct: 1,
+                amount: 3
+            },
+            2:  {
+                idProduct: 2,
+                amount: 1
+            }
+        },
+        services: {
+            1: {
+                idService: 1
+            }
+        },
+        totalValue: 500.00
+    }
+]));
+
+//Produtos
+localStorage.setItem("vpProdutos", JSON.stringify([
+    {
+        id: 1,
+        name: "Spray de lavagem a seco",
+        price: 15.00,
+        brand: "Pet Society",
+        amount: "200ml" 
+    }
+]));
+
+//Serviços
+localStorage.setItem("vpServicos", JSON.stringify([
+    {
+        id: 1,
+        name: "Tosa na tesoura",
+        price: 52.00
     }
 ]));
