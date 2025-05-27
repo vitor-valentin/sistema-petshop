@@ -1,10 +1,11 @@
 const sidebarPlaceholder = document.getElementById("sidebar-placeholder");
 const headerPlaceholder = document.getElementById("header-placeholder");
 const pagePlaceholder = document.getElementById("page-placeholder");
-const validLogins = JSON.parse(localStorage.getItem("vpValidLogins")) || [];
+const validLogins = JSON.parse(localStorage.getItem("vpLogins")) || [];
+const formularioClientes = document.querySelector('#formulario-cliente');
 
 function verifyLogin() {
-    const login = JSON.parse(localStorage.getItem("vpLogin")) || [];
+    const login = JSON.parse(localStorage.getItem("vpLogin")) || null;
 
     if (!login || !login.username || !login.password) return false;
 
@@ -127,7 +128,7 @@ function initializeCode() {
     const sidebar = document.querySelector(".sidebar");
     const sidebarBtns = document.querySelectorAll("#sidebarBtn");
     const username = document.querySelector("username");
-    const login = JSON.parse(localStorage.getItem("vpLogin"));
+    const login = JSON.parse(localStorage.getItem("vpValidLogins"));
     const pageTitle = document.getElementById("page-title");
     const vendaDetails = document.querySelector(".vendas-details");
     const closeBtn = vendaDetails.querySelector(".close-btn");
@@ -465,3 +466,80 @@ function initializeCode() {
     });
 }
 
+  function atualizarIndicadores() {
+    const linhas = document.querySelectorAll("table tbody tr");
+    let totalProdutos = linhas.length;
+    let estoqueTotal = 0;
+    let valorTotalEstoque = 0;
+    let produtosEsgotados = 0;
+
+    linhas.forEach(linha => {
+      const precoTexto = linha.children[1].textContent.trim(); // R$ 15,00
+      const estoqueTexto = linha.children[4].textContent.trim(); // 2
+
+      const preco = parseFloat(precoTexto.replace("R$", "").replace(",", "."));
+      const estoque = parseInt(estoqueTexto);
+
+      if (estoque === 0) produtosEsgotados++;
+
+      estoqueTotal += estoque;
+      valorTotalEstoque += preco * estoque;
+    });
+
+    
+    document.querySelector("#produtos-cadastrados").textContent = totalProdutos;
+    document.querySelector("#estoque-total").textContent = estoqueTotal + " Unidades";
+    document.querySelector("#valor-total-estoque").textContent = "R$ " + valorTotalEstoque.toFixed(2).replace(".", ",");
+    document.querySelector("#produtos-esgotados").textContent = produtosEsgotados;
+  }
+
+     
+     function mostrarFormulario() {
+        const botaoAdicionar = document.getElementById("botaoAdicionarCliente");
+        document.getElementById("tableContent").setAttribute("hidden");
+        botaoAdicionar.addEventListener("click", function () {
+            formularioClientes.removeAttribute("hidden");
+    });
+    }
+
+    function confirmarCadastro() {
+      // Obter valores
+      const nome = document.getElementById("nome").value;
+      const cpf = document.getElementById("cpf").value;
+      const email = document.getElementById("email").value;
+      const telefone = document.getElementById("telefone").value;
+      const genero = document.getElementById("genero").value;
+      const dataNascimento = document.getElementById("dataNascimento").value;
+
+      if (!nome || !cpf || !email || !telefone || !genero || !dataNascimento) {
+        alert("Preencha todos os campos.");
+        return;
+      }
+
+      // Adicionar à tabela
+      const tabela = document.getElementById("tabela-clientes").querySelector("tbody");
+      const novaLinha = document.createElement("tr");
+
+      novaLinha.innerHTML = `
+        <td>${nome}</td>
+        <td>${cpf}</td>
+        <td>${email}</td>
+        <td>${telefone}</td>
+        <td>${genero}</td>
+        <td>${dataNascimento}</td>
+      `;
+
+      tabela.appendChild(novaLinha);
+
+      // Limpar formulário
+      document.getElementById("nome").value = "";
+      document.getElementById("cpf").value = "";
+      document.getElementById("email").value = "";
+      document.getElementById("telefone").value = "";
+      document.getElementById("genero").value = "";
+      document.getElementById("dataNascimento").value = "";
+
+      // Voltar para lista
+      document.getElementById("formulario-cliente").classList.add("hidden");
+      document.getElementById("lista-clientes").classList.remove("hidden");
+    }
