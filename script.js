@@ -55,7 +55,7 @@ if (verifyLogin()) {
             initializeCode();
         })
         .catch((error) => {
-            console.error("Erro:", error);
+            console.error(`Erro: ${error}`);
         });
 } else {
     Promise.all([
@@ -74,7 +74,7 @@ if (verifyLogin()) {
             loginPage();
         })
         .catch((error) => {
-            console.error("Erro:", error);
+            console.error(`Erro: ${error}`);
         });
 }
 
@@ -98,7 +98,7 @@ function loginPage() {
             const login = { username, password };
 
             localStorage.setItem("vpLogin", JSON.stringify(login));
-            
+
             //TODO: Add success message.
             location.reload();
         } else {
@@ -111,6 +111,16 @@ function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
+function getClientNameById(id) {
+    const clientes = JSON.parse(localStorage.getItem("vpClientes"));
+    const cliente = clientes.find((c) => c.id === id);
+    return cliente ? cliente.name : false;
+}
+
+function formatReal(value) {
+    return value.toLocaleString('pt-BR', { style: "currency", currency: "BRL" });
+}
+
 function initializeCode() {
     const sidebarBtn = document.querySelector(".menu");
     const headerMenu = document.querySelector("header");
@@ -119,6 +129,8 @@ function initializeCode() {
     const username = document.querySelector("username");
     const login = JSON.parse(localStorage.getItem("vpLogin"));
     const pageTitle = document.getElementById("page-title");
+    const vendaDetails = document.querySelector(".vendas-details");
+    const closeBtn = vendaDetails.querySelector(".close-btn");
 
     let paginationContainer = document.querySelector(".pagination");
 
@@ -132,12 +144,12 @@ function initializeCode() {
             {
                 label: "Editar",
                 class: "btn btn-warning",
-                onClick: (item) => alert("Editar: " + item.name),
+                onClick: (item) => alert("Editar: " + item.id),
             },
             {
                 label: "Excluir",
                 class: "btn btn-danger",
-                onClick: (item) => alert("Excluir: " + item.name),
+                onClick: (item) => alert("Excluir: " + item.id),
             },
         ],
     };
@@ -146,21 +158,65 @@ function initializeCode() {
 
     username.textContent = login.username;
 
+    function retrieveVendaData(type, id) {
+        if(type === "Serviços") type = "Servicos";
+        const data = JSON.parse(localStorage.getItem(`vp${type}`)).find(c => c.id === id);
+        return data;
+    }
+
+    function renderVendaDetails(dataArray, type) {
+        if(type === "Servicos") type = "Serviços";
+        const detailsTbody = vendaDetails.querySelector("tbody");
+        const detailsTypeName = vendaDetails.querySelector("detailsName");
+        
+        detailsTypeName.textContent = type;
+        detailsTbody.innerHTML = "";
+
+        Object.keys(dataArray).forEach(key => {
+            const tr = document.createElement("tr");
+            const innerData = retrieveVendaData(type, dataArray[key].id);
+            
+            Object.keys(innerData).forEach(innerKey => {
+                if(innerKey != "id"){
+                    const td = document.createElement("td");
+                    
+                    if(innerKey === "price") {
+                        td.textContent = formatReal(innerData[innerKey]);
+                    }else {
+                        td.textContent = innerData[innerKey];
+                    }
+                    tr.appendChild(td);
+                }
+            });
+
+            detailsTbody.appendChild(tr);
+        });
+    }
+
+    function showVendaDetails(id, type) {
+        const typeData = type === "products" ? "Produtos" : "Servicos";
+        let data = JSON.parse(localStorage.getItem(`vpVendas`)).find(c => c.id === id);
+        data = type === "products" ? data.products : data.services;
+        
+        if(!data) return;
+        
+        renderVendaDetails(data, typeData);
+        vendaDetails.classList.add("showing");
+    }
+
     function renderTable(options) {
         const tbody = pagePlaceholder.querySelector("table tbody");
         const pageName = pagePlaceholder.querySelector(".content").id;
-        const data = JSON.parse(localStorage.getItem("vp" + pageName)) || [];
+        const data = JSON.parse(localStorage.getItem(`vp${pageName}`)) || [];
 
         if (!data.length) {
             let page = pageName.toLowerCase().slice(0, -1);
             let text =
                 page === "venda"
                     ? "Nenhuma venda encontrada."
-                    : "Nenhum " + page + " encontrado";
+                    : `Nenhum ${page} encontrado.`;
             tbody.innerHTML =
-                "<tr><td style='text-align: center;' colspan='99'>" +
-                text +
-                "</td></tr>";
+                `<tr><td style='text-align: center;' colspan='99'> ${text} </td></tr>`;
             return;
         }
 
@@ -179,7 +235,29 @@ function initializeCode() {
 
             fields.forEach((key) => {
                 const td = document.createElement("td");
-                td.textContent = item[key];
+
+                if (pageName === "Vendas" && key === "idCliente") {
+                    td.textContent = getClientNameById(item[key]);
+                }else if (pageName === "Vendas" && (key === "products" || key === "services")) {
+                    const btn = document.createElement("button");
+
+                    if (Object.keys(item[key]).length > 0){
+                        btn.textContent = "Detalhes";
+                    } else {
+                        btn.textContent = "Nenhum";
+                        btn.setAttribute("disabled","disabled");
+                    }
+                    
+                    btn.className = "btn btn-info";
+                    btn.id = key;
+                    btn.onclick = () => showVendaDetails(item.id, key);
+                    td.appendChild(btn);
+                }else if (key === "price" || key === "totalValue") { 
+                    td.textContent = formatReal(item[key]);
+                } else {
+                    td.textContent = item[key];
+                }
+
                 tr.appendChild(td);
             });
 
@@ -201,7 +279,7 @@ function initializeCode() {
 
     function renderPagination() {
         const pageName = pagePlaceholder.querySelector(".content").id;
-        const data = JSON.parse(localStorage.getItem("vp" + pageName)) || [];
+        const data = JSON.parse(localStorage.getItem(`vp${pageName}`)) || [];
         const totalPages = Math.ceil(data.length / rowsPerPage);
 
         paginationContainer.innerHTML = "";
@@ -265,7 +343,7 @@ function initializeCode() {
             //TODO: Insert the remaining dashboard ids
         };
 
-        let value = data.length + " " + pageName;
+        let value = `${data.length} ${pageName}`;
         updateDashboardCard(countDashboards[pageName.toLowerCase()], value);
     }
 
@@ -297,7 +375,10 @@ function initializeCode() {
         let buyersId = [];
 
         sales.forEach((item) => {
-            if (!buyersId.includes(item.idCliente) && isCurrentMonth(item.soldDate, false)) {
+            if (
+                !buyersId.includes(item.idCliente) &&
+                isCurrentMonth(item.soldDate, false)
+            ) {
                 buyersId.push(item.idCliente);
             }
         });
@@ -312,12 +393,9 @@ function initializeCode() {
             case "Clientes":
                 updateDashboardCard(
                     "birthdays",
-                    countBirthdays() + " Este Mês"
+                    `${countBirthdays()} Este Mês`
                 );
-                updateDashboardCard(
-                    "bought",
-                    monthBuyers() + " Este Mês"
-                );
+                updateDashboardCard("bought", `${monthBuyers()} Este Mês`);
                 break;
         }
     }
@@ -336,7 +414,7 @@ function initializeCode() {
         fetch("pages/" + redPage + ".html")
             .then((response) => {
                 if (!response.ok) {
-                    throw new Error("Error ao carregar a página " + redPage);
+                    throw new Error(`Error ao carregar a página ${redPage}`);
                 }
                 return response.text();
             })
@@ -381,4 +459,9 @@ function initializeCode() {
             btn.classList.add("active");
         });
     });
+
+    closeBtn.addEventListener("click", () => {
+        vendaDetails.classList.remove("showing");
+    });
 }
+

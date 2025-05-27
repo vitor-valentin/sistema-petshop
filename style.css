@@ -191,7 +191,7 @@ li.active {
     color: white;
 }
 
-table {
+.tableContent table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
@@ -200,28 +200,28 @@ table {
     overflow: hidden;
 }
 
-th,
-td {
+.tableContent th,
+.tableContent td {
     cursor: default;
     padding: 12px;
     text-align: left;
     border-bottom: 1px solid #ddd;
 }
 
-thead {
+.tableContent thead {
     background-color: #007bff;
     color: white;
 }
 
-tbody tr {
+.tableContent tbody tr {
     transition: background-color 0.3s;
 }
 
-tbody tr:nth-child(even) {
+.tableContent tbody tr:nth-child(even) {
     background-color: #f9f9f9;
 }
 
-tbody tr:hover {
+.tableContent tbody tr:hover {
     background-color: #e0f7fa;
 }
 
@@ -319,4 +319,126 @@ input {
     margin-top: 20px;
     font-size: 14px;
     color: #999;
+}
+
+.vendas-details {
+    display: flex;
+    position: fixed;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+}
+
+.black-overlay {
+    width: 100%;
+    height: 100%;
+    background-color: black;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.vendas-details.showing .black-overlay {
+    opacity: 0.6;
+    pointer-events: all;
+}
+
+.details-box {
+    position: fixed;
+    width: 0;
+    height: 0;
+    background-color: white;
+    border-radius: 20px;
+    overflow: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: #ccc transparent;
+    transition: all 0.8s ease;
+    pointer-events: all;
+}
+
+.vendas-details.showing .details-box {
+    width: 80%;
+    height: 800px;
+    padding: 40px;
+}
+
+.details-scroll {
+    height: 100%;
+    overflow-y: auto;
+}
+
+.table-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background-color: #aaa;
+}
+
+.details-box h2 {
+    font-weight: 200;
+    font-size: 40px;
+    margin-bottom: 30px;
+    color: #8c8c8c;
+}
+
+.vendas-details .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 20px;
+    background-color: #d7d7d8;
+    border-radius: 100%;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.close-btn:hover {
+    transform: scale(1.1);
+}
+
+.details-box table {
+    width: 100%;
+}
+
+.details-box tbody tr {
+    width: 100%;
+    display: inline-block;
+    font-size: 30px;
+    border-top: 1px solid #8c8c8c;
+    border-bottom: 0;
+    padding: 20px 0;
+    display: flex;
+    justify-content: space-around;
+    transition: background-color 0.3s ease;
+}
+
+.details-box tr:hover {
+    background-color: #e6e6e6;
+}
+
+.details-box td {
+    width: 25%;
+    text-align: center;
 }
