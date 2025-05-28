@@ -74,6 +74,44 @@ header .user {
     cursor: pointer;
 }
 
+.config-box.open {
+    max-height: 96px;
+}
+
+header .config-box {
+    position: absolute;
+    top: 60px;
+    right: 20px;
+    background-color: #d3d3d3;
+    border-radius: 10px;
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.4s ease;
+}
+
+.config-box ul {
+    list-style-type: none;
+    padding: 8px;
+}
+
+.config-box li {
+    cursor: pointer;
+    padding: 10px;
+    font-size: 16px;
+    color: black;
+    font-weight: 400;
+    border-radius: 10px;
+}
+
+.config-box li:hover {
+    background-color: #e2e2e2;
+}
+
+.config-box li i {
+    font-size: 16px;
+    color: black;
+}
+
 .sidebar {
     overflow: hidden;
     width: 220px;
@@ -373,22 +411,22 @@ input {
 }
 
 .table-container::-webkit-scrollbar {
-  width: 6px;
+    width: 6px;
 }
 
 .table-container::-webkit-scrollbar-track {
-  background: transparent;
+    background: transparent;
 }
 
 .table-container::-webkit-scrollbar-thumb {
-  background-color: #ccc;
-  border-radius: 10px;
-  border: 2px solid transparent;
-  background-clip: content-box;
+    background-color: #ccc;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: content-box;
 }
 
 .table-container::-webkit-scrollbar-thumb:hover {
-  background-color: #aaa;
+    background-color: #aaa;
 }
 
 .details-box h2 {
@@ -441,4 +479,45 @@ input {
 .details-box td {
     width: 25%;
     text-align: center;
+}
+
+.form-box {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 10px;
+    max-width: 500px;
+    margin: 2rem auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.form-box h2 {
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.input-box {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1rem;
+}
+
+.input-box label {
+    margin-bottom: 0.3rem;
+    font-weight: bold;
+    color: #333;
+}
+
+.input-box input,
+.input-box select {
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+}
+
+.form-buttons {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 1rem;
 }

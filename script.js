@@ -1,3 +1,5 @@
+//TODO: Finish the initVendas!!!!
+
 const sidebarPlaceholder = document.getElementById("sidebar-placeholder");
 const headerPlaceholder = document.getElementById("header-placeholder");
 const pagePlaceholder = document.getElementById("page-placeholder");
@@ -107,6 +109,11 @@ function loginPage() {
     });
 }
 
+function logout() {
+    localStorage.setItem("vpLogin", JSON.stringify([]));
+    location.reload();
+}
+
 function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
@@ -118,7 +125,52 @@ function getClientNameById(id) {
 }
 
 function formatReal(value) {
-    return value.toLocaleString('pt-BR', { style: "currency", currency: "BRL" });
+    return value.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+    });
+}
+
+function isValidCPF(cpf) {
+    cpf = cpf.replace(/[^\d]+/g, "");
+    if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
+
+    let sum = 0,
+        rest;
+    for (let i = 1; i <= 9; i++) sum += parseInt(cpf[i - 1]) * (11 - i);
+    rest = (sum * 10) % 11;
+    if (rest === 10 || rest === 11) rest = 0;
+    if (rest !== parseInt(cpf[9])) return false;
+
+    sum = 0;
+    for (let i = 1; i <= 10; i++) sum += parseInt(cpf[i - 1]) * (12 - i);
+    rest = (sum * 10) % 11;
+    if (rest === 10 || rest === 11) rest = 0;
+    return rest === parseInt(cpf[10]);
+}
+
+function isValidDate(dateStr) {
+    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return false;
+
+    const [day, month, year] = dateStr.split("/").map(Number);
+    const date = new Date(year, month - 1, day);
+
+    const isValid =
+        date.getFullYear() === year &&
+        date.getMonth() === month - 1 &&
+        date.getDate() === day;
+
+    if (!isValid) return false;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return data <= today;
+}
+
+function isValidMoney(value) {
+    const clean = value.replace("R$", "").replace(",", ".").trim();
+    const parsed = parseFloat(clean);
+    return !isNaN(parsed) && parsed > 0;
 }
 
 function initializeCode() {
@@ -131,6 +183,7 @@ function initializeCode() {
     const pageTitle = document.getElementById("page-title");
     const vendaDetails = document.querySelector(".vendas-details");
     const closeBtn = vendaDetails.querySelector(".close-btn");
+    const userConfigOpenBtn = document.querySelector(".user i");
 
     let paginationContainer = document.querySelector(".pagination");
 
@@ -144,12 +197,21 @@ function initializeCode() {
             {
                 label: "Editar",
                 class: "btn btn-warning",
-                onClick: (item) => alert("Editar: " + item.id),
+                onClick: (item) => {
+                    const entityName = pagePlaceholder
+                        .querySelector(".content")
+                        ?.id?.toLowerCase();
+                    if (entityName) {
+                        openFormPage(entityName, "Editar", item);
+                    } else {
+                        console.warn("Entidade não identificada!");
+                    }
+                },
             },
             {
                 label: "Excluir",
                 class: "btn btn-danger",
-                onClick: (item) => alert("Excluir: " + item.id),
+                onClick: (item) => deleteRegister(item.id),
             },
         ],
     };
@@ -158,31 +220,44 @@ function initializeCode() {
 
     username.textContent = login.username;
 
+    renderTable(tableOptions);
+    renderPagination();
+    updateSectionCards("Clientes");
+
+    checkPermissionLevel();
+
+    function toggleConfigBoxUser() {
+        const configBox = document.querySelector(".config-box");
+        configBox.classList.toggle("open");
+    }
+
     function retrieveVendaData(type, id) {
-        if(type === "Serviços") type = "Servicos";
-        const data = JSON.parse(localStorage.getItem(`vp${type}`)).find(c => c.id === id);
+        if (type === "Serviços") type = "Servicos";
+        const data = JSON.parse(localStorage.getItem(`vp${type}`)).find(
+            (c) => c.id === id
+        );
         return data;
     }
 
     function renderVendaDetails(dataArray, type) {
-        if(type === "Servicos") type = "Serviços";
+        if (type === "Servicos") type = "Serviços";
         const detailsTbody = vendaDetails.querySelector("tbody");
         const detailsTypeName = vendaDetails.querySelector("detailsName");
-        
+
         detailsTypeName.textContent = type;
         detailsTbody.innerHTML = "";
 
-        Object.keys(dataArray).forEach(key => {
+        Object.keys(dataArray).forEach((key) => {
             const tr = document.createElement("tr");
             const innerData = retrieveVendaData(type, dataArray[key].id);
-            
-            Object.keys(innerData).forEach(innerKey => {
-                if(innerKey != "id"){
+
+            Object.keys(innerData).forEach((innerKey) => {
+                if (innerKey != "id") {
                     const td = document.createElement("td");
-                    
-                    if(innerKey === "price") {
+
+                    if (innerKey === "price") {
                         td.textContent = formatReal(innerData[innerKey]);
-                    }else {
+                    } else {
                         td.textContent = innerData[innerKey];
                     }
                     tr.appendChild(td);
@@ -195,11 +270,13 @@ function initializeCode() {
 
     function showVendaDetails(id, type) {
         const typeData = type === "products" ? "Produtos" : "Servicos";
-        let data = JSON.parse(localStorage.getItem(`vpVendas`)).find(c => c.id === id);
+        let data = JSON.parse(localStorage.getItem(`vpVendas`)).find(
+            (c) => c.id === id
+        );
         data = type === "products" ? data.products : data.services;
-        
-        if(!data) return;
-        
+
+        if (!data) return;
+
         renderVendaDetails(data, typeData);
         vendaDetails.classList.add("showing");
     }
@@ -215,8 +292,7 @@ function initializeCode() {
                 page === "venda"
                     ? "Nenhuma venda encontrada."
                     : `Nenhum ${page} encontrado.`;
-            tbody.innerHTML =
-                `<tr><td style='text-align: center;' colspan='99'> ${text} </td></tr>`;
+            tbody.innerHTML = `<tr><td style='text-align: center;' colspan='99'> ${text} </td></tr>`;
             return;
         }
 
@@ -238,21 +314,24 @@ function initializeCode() {
 
                 if (pageName === "Vendas" && key === "idCliente") {
                     td.textContent = getClientNameById(item[key]);
-                }else if (pageName === "Vendas" && (key === "products" || key === "services")) {
+                } else if (
+                    pageName === "Vendas" &&
+                    (key === "products" || key === "services")
+                ) {
                     const btn = document.createElement("button");
 
-                    if (Object.keys(item[key]).length > 0){
+                    if (Object.keys(item[key]).length > 0) {
                         btn.textContent = "Detalhes";
                     } else {
                         btn.textContent = "Nenhum";
-                        btn.setAttribute("disabled","disabled");
+                        btn.setAttribute("disabled", "disabled");
                     }
-                    
+
                     btn.className = "btn btn-info";
                     btn.id = key;
                     btn.onclick = () => showVendaDetails(item.id, key);
                     td.appendChild(btn);
-                }else if (key === "price" || key === "totalValue") { 
+                } else if (key === "price" || key === "totalValue") {
                     td.textContent = formatReal(item[key]);
                 } else {
                     td.textContent = item[key];
@@ -340,7 +419,8 @@ function initializeCode() {
         const countDashboards = {
             clientes: "registered",
             vendas: "totalSales",
-            //TODO: Insert the remaining dashboard ids
+            produtos: "totalProducts",
+            servicos: "totalServices",
         };
 
         let value = `${data.length} ${pageName}`;
@@ -357,7 +437,6 @@ function initializeCode() {
 
     function countBirthdays() {
         const data = JSON.parse(localStorage.getItem("vpClientes")) || [];
-        if (!data) return;
 
         let amountBirthdays = 0;
 
@@ -368,15 +447,14 @@ function initializeCode() {
         return amountBirthdays;
     }
 
-    function monthBuyers() {
+    function monthBuyers(allowDuplicate = false) {
         const sales = JSON.parse(localStorage.getItem("vpVendas")) || [];
-        if (!sales) return;
 
         let buyersId = [];
 
         sales.forEach((item) => {
             if (
-                !buyersId.includes(item.idCliente) &&
+                (!buyersId.includes(item.idCliente) || allowDuplicate) &&
                 isCurrentMonth(item.soldDate, false)
             ) {
                 buyersId.push(item.idCliente);
@@ -386,8 +464,64 @@ function initializeCode() {
         return buyersId.length;
     }
 
+    function valueSales() {
+        const data = JSON.parse(localStorage.getItem("vpVendas"));
+        let totalValue = 0;
+        let monthValue = 0;
+
+        Object.keys(data).forEach((key) => {
+            if (isCurrentMonth(data[key].soldDate, false))
+                monthValue += data[key].totalValue;
+            totalValue += data[key].totalValue;
+        });
+
+        return [totalValue, monthValue];
+    }
+
+    function countTotalStockAndValue() {
+        const products = JSON.parse(localStorage.getItem("vpProdutos")) || [];
+        let totalStock = 0;
+        let totalStockValue = 0;
+        let outOfStock = 0;
+
+        products.forEach((product) => {
+            if (product.stock == 0) outOfStock++;
+            totalStock += product.stock;
+            totalStockValue += product.stock * product.price;
+        });
+
+        return [totalStock, totalStockValue, outOfStock];
+    }
+
+    function calcServicesRealizedAndValue() {
+        const sales = JSON.parse(localStorage.getItem("vpVendas"));
+        const services = JSON.parse(localStorage.getItem("vpServicos"));
+
+        let totalValueServices = 0;
+        let realizedServicesMonth = 0;
+        let monthServicesValue = 0;
+
+        sales.forEach((sale) => {
+            const servicesSale = sale.services;
+
+            Object.keys(servicesSale).forEach((key) => {
+                let saleService = services.filter(
+                    (s) => s.id === servicesSale[key].id
+                )[0];
+
+                totalValueServices += saleService.price;
+                if (isCurrentMonth(sale.soldDate, false)) {
+                    monthServicesValue += saleService.price;
+                    realizedServicesMonth++;
+                }
+            });
+        });
+
+        return [totalValueServices, realizedServicesMonth, monthServicesValue];
+    }
+
     function updateSectionCards(pTitle) {
-        updateCountDataDashboards("vp" + pTitle, pageTitle.textContent);
+        updateCountDataDashboards(`vp${pTitle}`, pTitle);
 
         switch (pTitle) {
             case "Clientes":
@@ -397,12 +531,40 @@ function initializeCode() {
                 );
                 updateDashboardCard("bought", `${monthBuyers()} Este Mês`);
                 break;
+            case "Vendas":
+                const [totalSalesValue, monthSalesValue] = valueSales();
+                updateDashboardCard(
+                    "monthSales",
+                    `${monthBuyers(true)} Este Mês`
+                );
+                updateDashboardCard("salesValue", formatReal(totalSalesValue));
+                updateDashboardCard(
+                    "monthSalesValue",
+                    formatReal(monthSalesValue)
+                );
+                break;
+            case "Produtos":
+                const [totalStock, stockValue, outOfStock] =
+                    countTotalStockAndValue();
+                updateDashboardCard("totalStock", `${totalStock} Unidade(s)`);
+                updateDashboardCard("totalValue", formatReal(stockValue));
+                updateDashboardCard("outOfStock", `${outOfStock} Produto(s)`);
+                break;
+            case "Servicos":
+                const [totalValue, realizedMonth, monthValue] =
+                    calcServicesRealizedAndValue();
+                updateDashboardCard("serviceRevenue", formatReal(totalValue));
+                updateDashboardCard(
+                    "monthServices",
+                    `${realizedMonth} Este Mês`
+                );
+                updateDashboardCard(
+                    "monthServiceRevenue",
+                    `${formatReal(monthValue)} Este Mês`
+                );
+                break;
         }
     }
-
-    renderTable(tableOptions);
-    renderPagination();
-    updateSectionCards("Clientes");
 
     function toggleSideBar() {
         sidebar.classList.toggle("hidden");
@@ -433,7 +595,7 @@ function initializeCode() {
 
                     renderTable(tableOptions);
                     renderPagination();
-                    updateSectionCards(pTitle);
+                    updateSectionCards(capitalizeFirstLetter(redPage));
                 });
             });
     }
@@ -445,6 +607,223 @@ function initializeCode() {
             }
         });
     }
+
+    function submitForm(entityKey) {
+        const form = document.getElementById("data-form");
+        if (!form) return;
+
+        form.addEventListener("submit", (e) => {
+            e.preventDefault();
+
+            const dataForm = new FormData(form);
+            const data = Object.fromEntries(dataForm.entries());
+
+            if (data.cpf && !isValidCPF(data.cpf)) {
+                alert("CPF inválido.");
+                return;
+            }
+
+            if (
+                (data.birthDate || data.soldDate) &&
+                !isValidDate(data.birthDate || data.soldDate)
+            ) {
+                alert("Data inválida. Use o formato dd/mm/aaaa.");
+                return;
+            }
+
+            if (
+                (data.price || data.totalValue) &&
+                !isValidMoney(data.price || data.totalValue)
+            ) {
+                alert("Informe um valor monetário válido maior que R$ 0,00.");
+                return;
+            }
+
+            const editId = form.getAttribute("data-edit-id");
+            const storageKey = `vp${capitalizeFirstLetter(entityKey)}`;
+            let registers = JSON.parse(localStorage.getItem(storageKey)) || [];
+
+            if (data.price)
+                data.price = parseFloat(
+                    data.price
+                        .replace("R$", "")
+                        .replace(/\s/g, "")
+                        .replace(",", ".")
+                );
+            if (data.totalValue)
+                data.totalValue = parseFloat(
+                    data.totalValue
+                        .replace("R$", "")
+                        .replace(/\s/g, "")
+                        .replace(",", ".")
+                );
+            if (data.idCliente) data.idCliente = parseInt(data.idCliente);
+
+            if (editId) {
+                const index = registers.findIndex((item) => item.id == editId);
+                if (index !== -1) {
+                    registers[index] = { ...registers[index], ...data };
+                }
+            } else {
+                const newId = registers.length
+                    ? Math.max(...registers.map((r) => r.id)) + 1
+                    : 1;
+                registers.push({ id: newId, ...data });
+            }
+
+            localStorage.setItem(storageKey, JSON.stringify(registers));
+            //TODO: Add a cool success popup!
+            alert(`${capitalizeFirstLetter(entityKey)} salvo com sucesso!`);
+        });
+    }
+
+    function deleteRegister(id) {
+        //TODO: Add custom confirm popup
+        //TODO: Create custom and cool popup! :)
+        const entityName = pagePlaceholder
+            .querySelector(".content")
+            ?.id?.toLowerCase();
+        if (!entityName) {
+            console.warn("Entidade não identificada.");
+            return;
+        }
+
+        const storageKey = `vp${capitalizeFirstLetter(entityName)}`;
+        let registers = JSON.parse(localStorage.getItem(storageKey));
+
+        const confirmDelete = confirm(
+            "Tem certeza que deseja excluir este registros?"
+        );
+        if (!confirmDelete) return;
+
+        registers = registers.filter((item) => item.id !== id);
+        localStorage.setItem(storageKey, JSON.stringify(registers));
+
+        alert("Registro excluído com sucesso!");
+        renderTable(tableOptions);
+        renderPagination();
+    }
+
+    function applyInputMasks() {
+        const cpfInput = document.querySelector('[name="cpf"]');
+        const phoneInput = document.querySelector('[name="phone"]');
+        const dateInput = document.querySelector(
+            '[name="birthDate"], [name="soldDate"]'
+        );
+        const moneyInputs = document.querySelectorAll(
+            '[name="price"], [name="totalValue"]'
+        );
+
+        if (cpfInput) {
+            cpfInput.addEventListener("input", (e) => {
+                let digits = cpfInput.value.replace(/\D/g, "").slice(0, 11);
+                cpfInput.value = digits
+                    .replace(/(\d{3})(\d)/, "$1.$2")
+                    .replace(/(\d{3})(\d)/, "$1.$2")
+                    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+            });
+        }
+
+        if (phoneInput) {
+            phoneInput.addEventListener("input", () => {
+                let digits = phoneInput.value.replace(/\D/g, "").slice(0, 11);
+                phoneInput.value = digits
+                    .replace(/(\d{2})(\d)/, "($1) $2")
+                    .replace(/(\d{5})(\d{1,4})$/, "$1-$2");
+            });
+        }
+
+        if (dateInput) {
+            dateInput.addEventListener("input", () => {
+                let digits = dateInput.value.replace(/\D/g, "").slice(0, 8);
+                dateInput.value = digits
+                    .replace(/(\d{2})(\d)/, "$1/$2")
+                    .replace(/(\d{2})(\d{1,4})$/, "$1/$2");
+            });
+        }
+
+        moneyInputs.forEach((input) => {
+            input.addEventListener("input", () => {
+                let value = input.value.replace(/\D/g, "").slice(0, 10);
+
+                if (value.length < 3) {
+                    value = value.padStart(3, "0");
+                }
+
+                let numeric = parseFloat(value) / 100;
+                input.value = "R$ " + numeric.toFixed(2).replace(".", ",");
+            });
+
+            input.addEventListener("focus", () => {
+                if (!input.value.startsWith("R$")) {
+                    input.value = "R$ 0,00";
+                }
+            });
+        });
+    }
+
+    function checkPermissionLevel() {
+        const login = JSON.parse(localStorage.getItem("vpLogin"));
+        const loginInfo = validLogins.filter(
+            (vl) =>
+                vl.username === login.username && vl.password === login.password
+        )[0];
+        
+        if(loginInfo.permissionLevel < 2) {
+            const controlPanel = document.getElementById("controlPanel");
+            controlPanel.remove();
+        } 
+    };
+
+    window.openFormPage = function (
+        entityName,
+        formTitle = "Cadastrar",
+        dataToEdit = null
+    ) {
+        fetch(`pages/${entityName}.form.html`)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(
+                        `Erro ao carregar o formulário de ${entityName}`
+                    );
+                }
+                return response.text();
+            })
+            .then((html) => {
+                pagePlaceholder.innerHTML = html;
+
+                requestAnimationFrame(() => {
+                    const formBoxTitle = document.getElementById("form-title");
+
+                    pageTitle.textContent = `${formTitle} ${capitalizeFirstLetter(
+                        entityName
+                    )}`;
+
+                    if (dataToEdit) {
+                        formBoxTitle.textContent = `Editando ${capitalizeFirstLetter(
+                            entityName
+                        ).slice(0, -1)} de ID: ${dataToEdit.id}`;
+                    }
+
+                    applyInputMasks();
+                    submitForm(entityName);
+                });
+
+                if (dataToEdit) {
+                    for (const key in dataToEdit) {
+                        const input = document.querySelector(`[name="${key}"]`);
+                        if (input) input.value = dataToEdit[key];
+                    }
+
+                    document
+                        .getElementById("data-form")
+                        .setAttribute("data-edit-id", dataToEdit.id);
+                }
+            })
+            .catch((err) => {
+                console.error(err);
+            });
+    };
 
     sidebarBtn.addEventListener("click", () => {
         toggleSideBar();
@@ -462,6 +841,10 @@ function initializeCode() {
 
     closeBtn.addEventListener("click", () => {
         vendaDetails.classList.remove("showing");
+    });
+
+    userConfigOpenBtn.addEventListener("click", () => {
+        toggleConfigBoxUser();
     });
 }
 

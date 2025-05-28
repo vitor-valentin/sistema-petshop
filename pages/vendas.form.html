@@ -1,0 +1,80 @@
+<div class="content">
+    <div class="form-box">
+        <h2 id="form-title">Cadastrar Nova Venda</h2>
+
+        <form id="data-form">
+            <div class="input-box">
+                <label for="clienteBusca">Cliente</label>
+                <input
+                    type="text"
+                    name="clienteSearch"
+                    id="clienteSearch"
+                    placeholder="Digite o nome ou CPF"
+                    required
+                    autocomplete="off"
+                />
+                <ul id="clientSuggestions" class="suggestions-list"></ul>
+                <input type="hidden" name="idCliente" id="idCliente" />
+            </div>
+
+            <div class="input-box">
+                <label for="soldDate">Data da Venda</label>
+                <input
+                    type="text"
+                    name="soldDate"
+                    id="soldDate"
+                    placeholder="dd/mm/aaaa"
+                    required
+                />
+            </div>
+
+            <div class="multi-box">
+                <label>Produtos</label>
+                <div id="productsList" class="item-list"></div>
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    onclick="addProduct()"
+                >
+                    + Adicionar Produto
+                </button>
+            </div>
+
+            <div class="multi-box">
+                <label>Serviços</label>
+                <div id="servicesList" class="item-list"></div>
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    onclick="addService()"
+                >
+                    + Adicionar Serviço
+                </button>
+            </div>
+
+            <div class="input-box">
+                <label for="totalValue">Valor Total</label>
+                <input
+                    type="text"
+                    name="totalValue"
+                    id="totalValue"
+                    placeholder="R$ 200,00"
+                    value="R$ 0,00"
+                    readonly
+                    required
+                />
+            </div>
+
+            <div class="form-buttons">
+                <button type="submit" class="btn btn-primary">Salvar</button>
+                <button
+                    type="button"
+                    class="btn btn-danger"
+                    onclick="changePage('vendas')"
+                >
+                    Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
