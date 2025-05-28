@@ -7,14 +7,16 @@ localStorage.setItem("vpValidLogins", JSON.stringify([
         username: "Vitor", 
         email: "vitor.rohling.becker@gmail.com", 
         password: "123456",
-        role: "Gerente"
+        role: "Gerente",
+        permissionLevel: 2
     },
     {
         id: 2,
         username: "Eduardo",
         email: "eduardo@gmail.com",
         password: "123456",
-        role: "Doutor Veterinário"
+        role: "Doutor Veterinário",
+        permissionLevel: 1
     }
 ]));
 
@@ -117,7 +119,7 @@ localStorage.setItem("vpVendas", JSON.stringify([
     {
         id: 1,
         idCliente: 1,
-        soldDate: "12/05/2025",
+        soldDate: "12/03/2025",
         products: {
             0: { id: 1, amount: 3 },
             1: { id: 2, amount: 1 }
@@ -310,7 +312,7 @@ localStorage.setItem("vpProdutos", JSON.stringify([
         price: 17.00,
         brand: "Pet Smell",
         amount: "250ml",
-        stock: 10
+        stock: 0
     }
 ]));
 
