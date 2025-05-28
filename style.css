@@ -521,3 +521,55 @@ input {
     gap: 1rem;
     margin-top: 1rem;
 }
+
+.dynamic-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 1rem;
+}
+
+.dynamic-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dynamic-item select {
+    flex: 9;
+    min-width: 0;
+    padding: 0.4rem;
+}
+.dynamic-item input {
+    flex: 1;
+    padding: 0.4rem;
+    min-width: 0;
+}
+
+.dynamic-item button {
+    flex: 0 0 auto;
+    padding: 0.4rem 0.6rem;
+}
+
+.suggestions-list {
+    position: absolute;
+    z-index: 10;
+    background: white;
+    border: 1px solid #ccc;
+    list-style: none;
+    max-height: 150px;
+    width: inherit;
+    overflow-y: auto;
+    display: none;
+    margin-top: 64px;
+    border-radius: 4px;
+}
+
+.suggestions-list li {
+    padding: 0.5rem;
+    cursor: pointer;
+}
+
+.suggestions-list li:hover {
+    background: #f0f0f0;
+}

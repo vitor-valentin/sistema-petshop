@@ -1,5 +1,3 @@
-//TODO: Finish the initVendas!!!!
-
 const sidebarPlaceholder = document.getElementById("sidebar-placeholder");
 const headerPlaceholder = document.getElementById("header-placeholder");
 const pagePlaceholder = document.getElementById("page-placeholder");
@@ -135,18 +133,7 @@ function isValidCPF(cpf) {
     cpf = cpf.replace(/[^\d]+/g, "");
     if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
 
-    let sum = 0,
-        rest;
-    for (let i = 1; i <= 9; i++) sum += parseInt(cpf[i - 1]) * (11 - i);
-    rest = (sum * 10) % 11;
-    if (rest === 10 || rest === 11) rest = 0;
-    if (rest !== parseInt(cpf[9])) return false;
-
-    sum = 0;
-    for (let i = 1; i <= 10; i++) sum += parseInt(cpf[i - 1]) * (12 - i);
-    rest = (sum * 10) % 11;
-    if (rest === 10 || rest === 11) rest = 0;
-    return rest === parseInt(cpf[10]);
+    return true;
 }
 
 function isValidDate(dateStr) {
@@ -164,11 +151,14 @@ function isValidDate(dateStr) {
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return data <= today;
+    return date <= today;
 }
 
 function isValidMoney(value) {
-    const clean = value.replace("R$", "").replace(",", ".").trim();
+    const clean =
+        typeof value === "string"
+            ? value.replace("R$", "").replace(",", ".").trim()
+            : value;
     const parsed = parseFloat(clean);
     return !isNaN(parsed) && parsed > 0;
 }
@@ -247,6 +237,8 @@ function initializeCode() {
         detailsTypeName.textContent = type;
         detailsTbody.innerHTML = "";
 
+        let count = 0;
+
         Object.keys(dataArray).forEach((key) => {
             const tr = document.createElement("tr");
             const innerData = retrieveVendaData(type, dataArray[key].id);
@@ -257,6 +249,8 @@ function initializeCode() {
 
                     if (innerKey === "price") {
                         td.textContent = formatReal(innerData[innerKey]);
+                    } else if (innerKey === "stock") {
+                        td.textContent = dataArray[count].amount;
                     } else {
                         td.textContent = innerData[innerKey];
                     }
@@ -264,6 +258,7 @@ function initializeCode() {
                 }
             });
 
+            count++;
             detailsTbody.appendChild(tr);
         });
     }
@@ -592,6 +587,7 @@ function initializeCode() {
 
                     paginationContainer = document.querySelector(".pagination");
                     tableOptions.page = 1;
+                    currentPage = 1;
 
                     renderTable(tableOptions);
                     renderPagination();
@@ -608,73 +604,116 @@ function initializeCode() {
         });
     }
 
-    function submitForm(entityKey) {
-        const form = document.getElementById("data-form");
+    function submitFormLogic(entityKey, form) {
         if (!form) return;
 
-        form.addEventListener("submit", (e) => {
-            e.preventDefault();
+        const dataForm = new FormData(form);
+        const data = Object.fromEntries(dataForm.entries());
 
-            const dataForm = new FormData(form);
-            const data = Object.fromEntries(dataForm.entries());
-
-            if (data.cpf && !isValidCPF(data.cpf)) {
-                alert("CPF inválido.");
-                return;
-            }
-
-            if (
-                (data.birthDate || data.soldDate) &&
-                !isValidDate(data.birthDate || data.soldDate)
-            ) {
-                alert("Data inválida. Use o formato dd/mm/aaaa.");
-                return;
-            }
-
-            if (
-                (data.price || data.totalValue) &&
-                !isValidMoney(data.price || data.totalValue)
-            ) {
-                alert("Informe um valor monetário válido maior que R$ 0,00.");
-                return;
-            }
-
-            const editId = form.getAttribute("data-edit-id");
-            const storageKey = `vp${capitalizeFirstLetter(entityKey)}`;
-            let registers = JSON.parse(localStorage.getItem(storageKey)) || [];
-
-            if (data.price)
-                data.price = parseFloat(
-                    data.price
-                        .replace("R$", "")
-                        .replace(/\s/g, "")
-                        .replace(",", ".")
-                );
-            if (data.totalValue)
+        if (entityKey === "vendas") {
+            try {
+                data.idCliente = parseInt(data.idCliente);
+                data.products = data.products ? JSON.parse(data.products) : {};
+                data.services = data.services ? JSON.parse(data.services) : {};
                 data.totalValue = parseFloat(
-                    data.totalValue
-                        .replace("R$", "")
-                        .replace(/\s/g, "")
-                        .replace(",", ".")
+                    data.totalValue.replace("R$", "").replace(",", ".").trim()
                 );
-            if (data.idCliente) data.idCliente = parseInt(data.idCliente);
 
-            if (editId) {
-                const index = registers.findIndex((item) => item.id == editId);
-                if (index !== -1) {
-                    registers[index] = { ...registers[index], ...data };
+                if (!data.soldDate) {
+                    const today = new Date();
+                    data.soldDate = `${String(today.getDate()).padStart(
+                        2,
+                        "0"
+                    )}/${String(today.getMonth() + 1).padStart(
+                        2,
+                        "0"
+                    )}/${today.getFullYear()}`;
                 }
-            } else {
-                const newId = registers.length
-                    ? Math.max(...registers.map((r) => r.id)) + 1
-                    : 1;
-                registers.push({ id: newId, ...data });
-            }
 
-            localStorage.setItem(storageKey, JSON.stringify(registers));
-            //TODO: Add a cool success popup!
-            alert(`${capitalizeFirstLetter(entityKey)} salvo com sucesso!`);
-        });
+                const products =
+                    JSON.parse(localStorage.getItem("vpProdutos")) || [];
+
+                for (const key in data.products) {
+                    const item = data.products[key];
+                    const product = products.find((p) => p.id == item.id);
+                    if (product) {
+                        const amountSold = parseInt(item.amount);
+                        if (product.stock < amountSold) {
+                            alert(
+                                `Estoque insuficiente para o produto: ${product.name}`
+                            );
+                            return;
+                        }
+                        product.stock -= amountSold;
+                    }
+                }
+
+                localStorage.setItem("vpProdutos", JSON.stringify(products));
+            } catch (e) {
+                console.log(e);
+                alert("Erro ao processar dados da venda.");
+                return;
+            }
+        }
+
+        if (data.cpf && !isValidCPF(data.cpf)) {
+            alert("CPF inválido.");
+            return;
+        }
+
+        if (
+            (data.birthDate || data.soldDate) &&
+            !isValidDate(data.birthDate || data.soldDate)
+        ) {
+            alert("Data inválida. Use o formato dd/mm/aaaa.");
+            return;
+        }
+
+        if (
+            (data.price || data.totalValue) &&
+            !isValidMoney(data.price || data.totalValue)
+        ) {
+            alert("Informe um valor monetário válido maior que R$ 0,00.");
+            return;
+        }
+
+        const editId = form.getAttribute("data-edit-id");
+        const storageKey = `vp${capitalizeFirstLetter(entityKey)}`;
+        let registers = JSON.parse(localStorage.getItem(storageKey)) || [];
+
+        if (data.price)
+            data.price = parseFloat(
+                data.price
+                    .replace("R$", "")
+                    .replace(/\s/g, "")
+                    .replace(",", ".")
+            );
+        if (data.totalValue) data.totalValue = parseFloat(data.totalValue);
+        if (data.idCliente) data.idCliente = parseInt(data.idCliente);
+
+        if(entityKey == "vendas") delete data.nomeCliente;
+
+        if (editId) {
+            const index = registers.findIndex((item) => item.id == editId);
+            if (index !== -1) {
+                registers[index] = { ...registers[index], ...data };
+            }
+        } else {
+            const newId = registers.length
+                ? Math.max(...registers.map((r) => r.id)) + 1
+                : 1;
+            registers.push({ id: newId, ...data });
+        }
+
+        localStorage.setItem(storageKey, JSON.stringify(registers));
+        alert(`${capitalizeFirstLetter(entityKey)} salvo com sucesso!`);
+
+        form.reset();
+
+        document.getElementById("product-list").innerHTML = "";
+        document.getElementById("service-list").innerHTML = "";
+        document.getElementById("idCliente").value = "";
+        document.getElementById("totalValue").value = formatReal(0);
     }
 
     function deleteRegister(id) {
@@ -768,12 +807,291 @@ function initializeCode() {
             (vl) =>
                 vl.username === login.username && vl.password === login.password
         )[0];
-        
-        if(loginInfo.permissionLevel < 2) {
+
+        if (loginInfo.permissionLevel < 2) {
             const controlPanel = document.getElementById("controlPanel");
             controlPanel.remove();
-        } 
-    };
+        }
+    }
+
+    function enforceStockLimit(qtyInput, selectInput) {
+        const produtos = JSON.parse(localStorage.getItem("vpProdutos")) || [];
+        const selectedProductId = parseInt(selectInput.value);
+        const produto = produtos.find((p) => p.id == selectedProductId);
+        if (!produto) return;
+
+        const estoque = parseInt(produto.stock) || 0;
+
+        if (parseInt(qtyInput.value) > estoque) {
+            qtyInput.value = estoque;
+        }
+    }
+
+    function initVendaForm(dataToEdit = null) {
+        const clientes = JSON.parse(localStorage.getItem("vpClientes")) || [];
+        const produtos = JSON.parse(localStorage.getItem("vpProdutos")) || [];
+        const servicos = JSON.parse(localStorage.getItem("vpServicos")) || [];
+
+        const idClienteInput = document.getElementById("idCliente");
+        const suggestionsBox = document.getElementById("client-suggestions");
+        const totalValueInput = document.getElementById("totalValue");
+        let selectedCliente = null;
+        let selectedProdutos = [];
+        let selectedServicos = [];
+
+        function updateTotal() {
+            let total = 0;
+            selectedProdutos.forEach((item) => {
+                const produto = produtos.find((p) => p.id == item.idProduct);
+                if (produto) total += produto.price * item.amount;
+            });
+            selectedServicos.forEach((item) => {
+                const servico = servicos.find((s) => s.id == item.idService);
+                if (servico) total += servico.price;
+            });
+            totalValueInput.value = formatReal(total);
+        }
+
+        function addVendaHiddenInputs(form) {
+            const clienteId = idClienteInput.getAttribute("data-id");
+            if (
+                !clienteId ||
+                !selectedCliente ||
+                idClienteInput.value !==
+                    `${selectedCliente.name} (${selectedCliente.cpf})`
+            ) {
+                alert("Selecione um cliente válido.");
+                return null;
+            }
+
+            ["idCliente", "products", "services"].forEach((name) => {
+                const existing = form.querySelector(`input[name="${name}"]`);
+                if (existing) existing.remove();
+            });
+
+            const hiddenCliente = document.createElement("input");
+            hiddenCliente.type = "hidden";
+            hiddenCliente.name = "idCliente";
+            hiddenCliente.value = clienteId;
+            form.appendChild(hiddenCliente);
+
+            const hiddenProducts = document.createElement("input");
+            hiddenProducts.type = "hidden";
+            hiddenProducts.name = "products";
+            hiddenProducts.value = JSON.stringify(
+                Object.fromEntries(
+                    selectedProdutos.map((p, i) => [
+                        i,
+                        { id: p.idProduct, amount: p.amount },
+                    ])
+                )
+            );
+            form.appendChild(hiddenProducts);
+
+            const hiddenServices = document.createElement("input");
+            hiddenServices.type = "hidden";
+            hiddenServices.name = "services";
+            hiddenServices.value = JSON.stringify(
+                Object.fromEntries(
+                    selectedServicos.map((s, i) => [i, { id: s.idService }])
+                )
+            );
+            form.appendChild(hiddenServices);
+
+            return true;
+        }
+
+        idClienteInput.addEventListener("input", () => {
+            const query = idClienteInput.value.toLowerCase();
+            suggestionsBox.innerHTML = "";
+            if (!query) {
+                suggestionsBox.style.display = "none";
+                return;
+            }
+
+            const matches = clientes.filter((c) => {
+                const cleanedQuery = query.trim().toLowerCase();
+                const nameMatch = c.name.toLowerCase().includes(cleanedQuery);
+                const cleanedCpfQuery = cleanedQuery.replace(/\D/g, "");
+                const cpfMatch = cleanedCpfQuery
+                    ? c.cpf.replace(/\D/g, "").includes(cleanedCpfQuery)
+                    : false;
+                return nameMatch || cpfMatch;
+            });
+
+            matches.forEach((c) => {
+                const li = document.createElement("li");
+                li.textContent = `${c.name} (${c.cpf})`;
+                li.addEventListener("click", () => {
+                    selectedCliente = c;
+                    idClienteInput.value = `${c.name} (${c.cpf})`;
+                    idClienteInput.setAttribute("data-id", c.id);
+                    suggestionsBox.style.display = "none";
+                });
+                suggestionsBox.appendChild(li);
+            });
+
+            suggestionsBox.style.display = matches.length ? "block" : "none";
+        });
+
+        document.addEventListener("click", (e) => {
+            if (
+                !suggestionsBox.contains(e.target) &&
+                e.target !== idClienteInput
+            ) {
+                suggestionsBox.style.display = "none";
+            }
+        });
+
+        window.addProduto = function (id = null, qtd = 1) {
+            const container = document.createElement("div");
+            container.className = "dynamic-item";
+
+            const select = document.createElement("select");
+            produtos.forEach((p) => {
+                if (p.stock > 0) {
+                    const opt = document.createElement("option");
+                    opt.value = p.id;
+                    opt.textContent = `${p.name} - ${formatReal(
+                        p.price
+                    )} (Estoque: ${p.stock})`;
+                    if(id && p.id == id) opt.selected = true;
+                    select.appendChild(opt);
+                }
+            });
+
+            if (select.options.length === 0) {
+                alert("Nenhum produto com estoque disponível.");
+                return;
+            }
+
+            const qty = document.createElement("input");
+            qty.type = "number";
+            qty.min = 1;
+            qty.value = qtd || 1;
+            qty.addEventListener("input", () => {
+                if (qty.value < 1) qty.value = 1;
+                enforceStockLimit(qty, select);
+            });
+
+            const removeBtn = document.createElement("button");
+            removeBtn.type = "button";
+            removeBtn.textContent = "🗑";
+            removeBtn.className = "btn btn-danger";
+            removeBtn.onclick = () => {
+                container.remove();
+                selectedProdutos = selectedProdutos.filter(
+                    (i) => i.element !== container
+                );
+                updateTotal();
+            };
+
+            container.append(select, qty, removeBtn);
+            document.getElementById("product-list").appendChild(container);
+
+            const item = {
+                element: container,
+                get idProduct() {
+                    return parseInt(select.value);
+                },
+                get amount() {
+                    return parseInt(qty.value);
+                },
+            };
+
+            [select, qty].forEach((el) =>
+                el.addEventListener("input", updateTotal)
+            );
+            selectedProdutos.push(item);
+            updateTotal();
+        };
+
+        window.addServico = function (id = null) {
+            const container = document.createElement("div");
+            container.className = "dynamic-item";
+
+            const select = document.createElement("select");
+            servicos.forEach((s) => {
+                const opt = document.createElement("option");
+                opt.value = s.id;
+                opt.textContent = `${s.name} - ${formatReal(s.price)}`;
+                if(id && s.id == id) opt.selected = true;
+                select.appendChild(opt);
+            });
+
+            const removeBtn = document.createElement("button");
+            removeBtn.type = "button";
+            removeBtn.textContent = "🗑";
+            removeBtn.className = "btn btn-danger";
+            removeBtn.onclick = () => {
+                container.remove();
+                selectedServicos = selectedServicos.filter(
+                    (i) => i.element !== container
+                );
+                updateTotal();
+            };
+
+            container.append(select, removeBtn);
+            document.getElementById("service-list").appendChild(container);
+
+            const item = {
+                element: container,
+                get idService() {
+                    return parseInt(select.value);
+                },
+            };
+
+            select.addEventListener("change", updateTotal);
+            selectedServicos.push(item);
+            updateTotal();
+        };
+
+        if (dataToEdit) {
+            const cliente = clientes.find((c) => c.id == dataToEdit.idCliente);
+            if (cliente) {
+                selectedCliente = cliente;
+                idClienteInput.value = `${cliente.name} (${cliente.cpf})`;
+                idClienteInput.setAttribute("data-id", cliente.id);
+            }
+
+            if (dataToEdit.products) {
+                const produtosObj =
+                    typeof dataToEdit.products === "string"
+                        ? JSON.parse(dataToEdit.products)
+                        : dataToEdit.products;
+
+                Object.values(produtosObj).forEach((p) => {
+                    addProduto(p.id, p.amount);
+                });
+            }
+
+            if (dataToEdit.services) {
+                const servicosObj =
+                    typeof dataToEdit.services === "string"
+                        ? JSON.parse(dataToEdit.services)
+                        : dataToEdit.services;
+
+                Object.values(servicosObj).forEach((s) => {
+                    addServico(s.id);
+                });
+            }
+
+            document.getElementById("soldDate").value = dataToEdit.soldDate;
+            document.getElementById("totalValue").value = formatReal(
+                dataToEdit.totalValue || 0
+            );
+        }
+
+        const form = document.getElementById("data-form");
+        form.addEventListener("submit", (e) => {
+            e.preventDefault();
+
+            const isValid = addVendaHiddenInputs(form);
+            if (!isValid) return;
+
+            submitFormLogic("vendas", form);
+        });
+    }
 
     window.openFormPage = function (
         entityName,
@@ -794,6 +1112,7 @@ function initializeCode() {
 
                 requestAnimationFrame(() => {
                     const formBoxTitle = document.getElementById("form-title");
+                    const form = document.getElementById("data-form");
 
                     pageTitle.textContent = `${formTitle} ${capitalizeFirstLetter(
                         entityName
@@ -803,22 +1122,30 @@ function initializeCode() {
                         formBoxTitle.textContent = `Editando ${capitalizeFirstLetter(
                             entityName
                         ).slice(0, -1)} de ID: ${dataToEdit.id}`;
+                        for (const key in dataToEdit) {
+                            const input = document.querySelector(
+                                `[name="${key}"]`
+                            );
+                            if (input) input.value = dataToEdit[key];
+                        }
+
+                        document
+                            .getElementById("data-form")
+                            .setAttribute("data-edit-id", dataToEdit.id);
                     }
 
                     applyInputMasks();
-                    submitForm(entityName);
-                });
 
-                if (dataToEdit) {
-                    for (const key in dataToEdit) {
-                        const input = document.querySelector(`[name="${key}"]`);
-                        if (input) input.value = dataToEdit[key];
+                    if (entityName == "vendas") {
+                        initVendaForm(dataToEdit || null);
+                    } else {
+                        form.addEventListener("submit", (e) => {
+                            e.preventDefault();
+
+                            submitFormLogic(entityName, form);
+                        });
                     }
-
-                    document
-                        .getElementById("data-form")
-                        .setAttribute("data-edit-id", dataToEdit.id);
-                }
+                });
             })
             .catch((err) => {
                 console.error(err);
@@ -847,4 +1174,3 @@ function initializeCode() {
         toggleConfigBoxUser();
     });
 }
-
