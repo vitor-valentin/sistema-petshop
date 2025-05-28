@@ -1,20 +1,43 @@
 <div class="content">
     <div class="form-box">
-        <h2 id="form-title">Cadastrar Nova Venda</h2>
+        <h2 id="form-title">Nova Venda</h2>
 
         <form id="data-form">
             <div class="input-box">
-                <label for="clienteBusca">Cliente</label>
+                <label for="idCliente">Cliente</label>
                 <input
                     type="text"
-                    name="clienteSearch"
-                    id="clienteSearch"
-                    placeholder="Digite o nome ou CPF"
-                    required
+                    name="nomeCliente"
+                    id="idCliente"
+                    placeholder="Digite nome ou CPF"
                     autocomplete="off"
+                    required
                 />
-                <ul id="clientSuggestions" class="suggestions-list"></ul>
-                <input type="hidden" name="idCliente" id="idCliente" />
+                <ul id="client-suggestions" class="suggestions-list"></ul>
+            </div>
+
+            <div class="form-group">
+                <label>Produtos</label>
+                <div id="product-list" class="dynamic-list"></div>
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    onclick="addProduto()"
+                >
+                    + Produto
+                </button>
+            </div>
+
+            <div class="form-group">
+                <label>Serviços</label>
+                <div id="service-list" class="dynamic-list"></div>
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    onclick="addServico()"
+                >
+                    + Serviço
+                </button>
             </div>
 
             <div class="input-box">
@@ -23,33 +46,9 @@
                     type="text"
                     name="soldDate"
                     id="soldDate"
-                    placeholder="dd/mm/aaaa"
                     required
+                    placeholder="dd/mm/aaaa"
                 />
-            </div>
-
-            <div class="multi-box">
-                <label>Produtos</label>
-                <div id="productsList" class="item-list"></div>
-                <button
-                    type="button"
-                    class="btn btn-secondary"
-                    onclick="addProduct()"
-                >
-                    + Adicionar Produto
-                </button>
-            </div>
-
-            <div class="multi-box">
-                <label>Serviços</label>
-                <div id="servicesList" class="item-list"></div>
-                <button
-                    type="button"
-                    class="btn btn-secondary"
-                    onclick="addService()"
-                >
-                    + Adicionar Serviço
-                </button>
             </div>
 
             <div class="input-box">
@@ -58,10 +57,8 @@
                     type="text"
                     name="totalValue"
                     id="totalValue"
-                    placeholder="R$ 200,00"
-                    value="R$ 0,00"
                     readonly
-                    required
+                    value="R$ 0,00"
                 />
             </div>
 
@@ -70,6 +67,7 @@
                 <button
                     type="button"
                     class="btn btn-danger"
+                    id="cancel-btn"
                     onclick="changePage('vendas')"
                 >
                     Cancelar
