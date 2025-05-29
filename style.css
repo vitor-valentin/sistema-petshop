@@ -1,5 +1,14 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
 
+@keyframes shrink {
+    from {
+        width: 100%;
+    }
+    to {
+        width: 0%;
+    }
+}
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -572,4 +581,162 @@ input {
 
 .suggestions-list li:hover {
     background: #f0f0f0;
+}
+
+#popup-container {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    width: 300px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.popup {
+    position: relative;
+    padding: 15px 20px 10px 20px;
+    border-radius: 6px;
+    color: white;
+    font-family: Arial, sans-serif;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+.popup.success {
+    background-color: #28a745;
+}
+
+.popup.failure {
+    background-color: #dc3545;
+}
+
+.progress-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 4px;
+    background-color: rgba(255, 255, 255, 0.7);
+    width: 100%;
+    transform-origin: left;
+    animation-timing-function: linear;
+}
+
+#confirm-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+#confirm-box {
+    background: white;
+    padding: 20px 30px;
+    border-radius: 8px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    font-family: Arial, sans-serif;
+}
+
+#confirm-message {
+    margin-bottom: 20px;
+    font-size: 16px;
+    color: #333;
+}
+
+#confirm-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.confirm-btn {
+    padding: 8px 18px;
+    font-size: 14px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    min-width: 80px;
+    transition: background-color 0.3s ease;
+}
+
+.confirm-btn.accept {
+    background-color: #28a745;
+    color: white;
+}
+.confirm-btn.accept:hover {
+    background-color: #218838;
+}
+
+.confirm-btn.cancel {
+    background-color: #dc3545;
+    color: white;
+}
+.confirm-btn.cancel:hover {
+    background-color: #c82333;
+}
+
+@media (max-width: 980px) {
+    .sidebar {
+        width: 100%;
+        top: 68px;
+    }
+
+    body:has(:not(.sidebar.hidden)) .menu {
+        z-index: 2;
+    }
+}
+
+@media (max-width: 768px) {
+    .tableContent table {
+        border: 0;
+    }
+
+    .tableContent thead {
+        display: none;
+    }
+
+    .tableContent tbody {
+        background-color: #f5f6fa;
+    }
+
+    .tableContent tbody tr {
+        display: block;
+        margin-bottom: 20px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 10px;
+        background-color: white;
+    }
+
+    .tableContent tbody td {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px;
+        border: none;
+        border-bottom: 1px solid #eee;
+    }
+
+    .tableContent tbody td::before {
+        content: attr(data-label);
+        font-weight: bold;
+        color: #333;
+    }
+
+    .tableContent tbody td:last-child {
+        border-bottom: none;
+    }
+
+    .user .config-box {
+        top: 75px;
+    }
 }

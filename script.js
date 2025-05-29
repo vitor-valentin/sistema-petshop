@@ -99,10 +99,12 @@ function loginPage() {
 
             localStorage.setItem("vpLogin", JSON.stringify(login));
 
-            //TODO: Add success message.
-            location.reload();
+            showPopup("Login realizado com sucesso!", "success", 1000);
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
         } else {
-            alert("Usuário ou senha inválidos!");
+            showPopup("Usuário ou senha inválidos!", "failure", 2000);
         }
     });
 }
@@ -163,6 +165,69 @@ function isValidMoney(value) {
     return !isNaN(parsed) && parsed > 0;
 }
 
+function showPopup(message, type = "success", duration = 4000) {
+    const container = document.getElementById("popup-container");
+
+    const popup = document.createElement("div");
+    popup.classList.add("popup", type);
+    popup.textContent = message;
+
+    const progressBar = document.createElement("div");
+    progressBar.classList.add("progress-bar");
+    popup.appendChild(progressBar);
+
+    container.appendChild(popup);
+
+    progressBar.style.animation = `shrink ${duration}ms linear forwards`;
+
+    setTimeout(() => {
+        popup.style.opacity = "0";
+        popup.style.transition = "opacity 0.5s ease";
+
+        setTimeout(() => {
+            container.removeChild(popup);
+        }, 500);
+    }, duration);
+}
+
+function showConfirm({
+    message = "Are you sure?",
+    acceptText = "Yes",
+    cancelText = "No",
+} = {}) {
+    return new Promise((resolve) => {
+        const overlay = document.getElementById("confirm-overlay");
+        const messageDiv = document.getElementById("confirm-message");
+        const acceptBtn = overlay.querySelector(".confirm-btn.accept");
+        const cancelBtn = overlay.querySelector(".confirm-btn.cancel");
+
+        messageDiv.textContent = message;
+        acceptBtn.textContent = acceptText;
+        cancelBtn.textContent = cancelText;
+
+        overlay.style.display = "flex";
+
+        function cleanUp() {
+            acceptBtn.removeEventListener("click", onAccept);
+            cancelBtn.removeEventListener("click", onCancel);
+            overlay.style.display = "none";
+        }
+
+        function onAccept() {
+            cleanUp();
+            resolve(true);
+        }
+
+        function onCancel() {
+            cleanUp();
+            resolve(false);
+        }
+
+        acceptBtn.addEventListener("click", onAccept);
+        cancelBtn.addEventListener("click", onCancel);
+    });
+}
+
 function initializeCode() {
     const sidebarBtn = document.querySelector(".menu");
     const headerMenu = document.querySelector("header");
@@ -214,7 +279,20 @@ function initializeCode() {
     renderPagination();
     updateSectionCards("Clientes");
 
+    responsiveWindow();
+
     checkPermissionLevel();
+
+    function responsiveWindow() {
+        if(window.innerWidth < 980){
+            console.log("oi");
+            if(!sidebar.classList.contains("hidden")) toggleSideBar();
+            headerMenu.classList.add("full");
+            pagePlaceholder.querySelector(".content").classList.add("full");
+            headerPlaceholder.querySelector(".user p")?.remove();
+            pageTitle.style.textAlign = "center";   
+        }
+    }
 
     function toggleConfigBoxUser() {
         const configBox = document.querySelector(".config-box");
@@ -299,6 +377,24 @@ function initializeCode() {
         const endIndex = startIndex + rowsPerPage;
         const rowsToDisplay = data.slice(startIndex, endIndex);
 
+        const fieldsName = {
+            name: "Nome",
+            phone: "Telefone",
+            email: "E-mail",
+            gender: "Sexo",
+            birthDate: "Data de Nascimento",
+            idCliente: "Cliente",
+            soldDate: "Data de Venda",
+            products: "Produtos",
+            services: "Serviços",
+            totalValue: "Total",
+            price: "Preço",
+            brand: "Marca",
+            amount: "Quantidade",
+            stock: "Estoque",
+            cpf: "CPF"
+        };
+
         tbody.innerHTML = "";
 
         rowsToDisplay.forEach((item) => {
@@ -306,6 +402,7 @@ function initializeCode() {
 
             fields.forEach((key) => {
                 const td = document.createElement("td");
+                td.setAttribute('data-label', fieldsName[key]);
 
                 if (pageName === "Vendas" && key === "idCliente") {
                     td.textContent = getClientNameById(item[key]);
@@ -337,6 +434,7 @@ function initializeCode() {
 
             if (options.actions) {
                 const td = document.createElement("td");
+                td.setAttribute('data-label', 'Ações');
                 options.actions.forEach((action) => {
                     const btn = document.createElement("button");
                     btn.className = action.class || "btn";
@@ -563,11 +661,11 @@ function initializeCode() {
 
     function toggleSideBar() {
         sidebar.classList.toggle("hidden");
-        headerMenu.classList.toggle("full");
+        if(window.innerWidth > 980) headerMenu.classList.toggle("full");
         page.classList.toggle("full");
     }
 
-    function changePage(redPage) {
+    window.changePage = function (redPage) {
         fetch("pages/" + redPage + ".html")
             .then((response) => {
                 if (!response.ok) {
@@ -589,12 +687,16 @@ function initializeCode() {
                     tableOptions.page = 1;
                     currentPage = 1;
 
+                    if(sidebar.classList.contains("hidden")) page.classList.add("full");
+
                     renderTable(tableOptions);
                     renderPagination();
                     updateSectionCards(capitalizeFirstLetter(redPage));
+
+                    responsiveWindow();
                 });
             });
-    }
+    };
 
     function removeCurrActiveBtnClass() {
         sidebarBtns.forEach((btn) => {
@@ -639,8 +741,10 @@ function initializeCode() {
                     if (product) {
                         const amountSold = parseInt(item.amount);
                         if (product.stock < amountSold) {
-                            alert(
-                                `Estoque insuficiente para o produto: ${product.name}`
+                            showPopup(
+                                `Estoque insuficiente para o produto: ${product.name}`,
+                                "failure",
+                                2000
                             );
                             return;
                         }
@@ -651,13 +755,13 @@ function initializeCode() {
                 localStorage.setItem("vpProdutos", JSON.stringify(products));
             } catch (e) {
                 console.log(e);
-                alert("Erro ao processar dados da venda.");
+                showPopup("Erro ao processar dados da venda.", "failure", 2000);
                 return;
             }
         }
 
         if (data.cpf && !isValidCPF(data.cpf)) {
-            alert("CPF inválido.");
+            showPopup("CPF Inválido!", "failure", 2000);
             return;
         }
 
@@ -665,7 +769,11 @@ function initializeCode() {
             (data.birthDate || data.soldDate) &&
             !isValidDate(data.birthDate || data.soldDate)
         ) {
-            alert("Data inválida. Use o formato dd/mm/aaaa.");
+            showPopup(
+                "Data inválida. Use o formato dd/mm/aaaa.",
+                "failure",
+                2000
+            );
             return;
         }
 
@@ -673,7 +781,11 @@ function initializeCode() {
             (data.price || data.totalValue) &&
             !isValidMoney(data.price || data.totalValue)
         ) {
-            alert("Informe um valor monetário válido maior que R$ 0,00.");
+            showPopup(
+                "Informe um valor monetário válido maior que R$ 0,00.",
+                "failure",
+                2000
+            );
             return;
         }
 
@@ -691,7 +803,7 @@ function initializeCode() {
         if (data.totalValue) data.totalValue = parseFloat(data.totalValue);
         if (data.idCliente) data.idCliente = parseInt(data.idCliente);
 
-        if(entityKey == "vendas") delete data.nomeCliente;
+        if (entityKey == "vendas") delete data.nomeCliente;
 
         if (editId) {
             const index = registers.findIndex((item) => item.id == editId);
@@ -706,7 +818,11 @@ function initializeCode() {
         }
 
         localStorage.setItem(storageKey, JSON.stringify(registers));
-        alert(`${capitalizeFirstLetter(entityKey)} salvo com sucesso!`);
+        showPopup(
+            `${capitalizeFirstLetter(entityKey)} salvo com sucesso!`,
+            "success",
+            2000
+        );
 
         form.reset();
 
@@ -717,8 +833,6 @@ function initializeCode() {
     }
 
     function deleteRegister(id) {
-        //TODO: Add custom confirm popup
-        //TODO: Create custom and cool popup! :)
         const entityName = pagePlaceholder
             .querySelector(".content")
             ?.id?.toLowerCase();
@@ -730,17 +844,20 @@ function initializeCode() {
         const storageKey = `vp${capitalizeFirstLetter(entityName)}`;
         let registers = JSON.parse(localStorage.getItem(storageKey));
 
-        const confirmDelete = confirm(
-            "Tem certeza que deseja excluir este registros?"
-        );
-        if (!confirmDelete) return;
+        showConfirm({
+            message: "Tem certeza que deseja excluir este registros?",
+            acceptText: "Sim",
+            cancelText: "Não",
+        }).then((confirmed) => {
+            if (!confirmed) return;
 
-        registers = registers.filter((item) => item.id !== id);
-        localStorage.setItem(storageKey, JSON.stringify(registers));
+            registers = registers.filter((item) => item.id !== id);
+            localStorage.setItem(storageKey, JSON.stringify(registers));
 
-        alert("Registro excluído com sucesso!");
-        renderTable(tableOptions);
-        renderPagination();
+            showPopup("Registro excluído com sucesso!", "success", "1000");
+            renderTable(tableOptions);
+            renderPagination();
+        });
     }
 
     function applyInputMasks() {
@@ -860,7 +977,7 @@ function initializeCode() {
                 idClienteInput.value !==
                     `${selectedCliente.name} (${selectedCliente.cpf})`
             ) {
-                alert("Selecione um cliente válido.");
+                showPopup("Selecione um cliente válido.", "failure", 2000);
                 return null;
             }
 
@@ -955,13 +1072,17 @@ function initializeCode() {
                     opt.textContent = `${p.name} - ${formatReal(
                         p.price
                     )} (Estoque: ${p.stock})`;
-                    if(id && p.id == id) opt.selected = true;
+                    if (id && p.id == id) opt.selected = true;
                     select.appendChild(opt);
                 }
             });
 
             if (select.options.length === 0) {
-                alert("Nenhum produto com estoque disponível.");
+                showPopup(
+                    "Nenhum produto com estoque disponível.",
+                    "failure",
+                    2000
+                );
                 return;
             }
 
@@ -1015,7 +1136,7 @@ function initializeCode() {
                 const opt = document.createElement("option");
                 opt.value = s.id;
                 opt.textContent = `${s.name} - ${formatReal(s.price)}`;
-                if(id && s.id == id) opt.selected = true;
+                if (id && s.id == id) opt.selected = true;
                 select.appendChild(opt);
             });
 
@@ -1145,6 +1266,8 @@ function initializeCode() {
                             submitFormLogic(entityName, form);
                         });
                     }
+
+                    responsiveWindow();
                 });
             })
             .catch((err) => {
@@ -1173,4 +1296,8 @@ function initializeCode() {
     userConfigOpenBtn.addEventListener("click", () => {
         toggleConfigBoxUser();
     });
+
+    window.addEventListener('resize', function(event) {
+        responsiveWindow();
+    }, true);
 }
