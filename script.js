@@ -40,6 +40,8 @@ if (verifyLogin()) {
                 pagePlaceholder.innerHTML = data;
             }),
 
+            
+
         fetch("templates/sidebar.html")
             .then((response) => {
                 if (!response.ok) {
@@ -1301,3 +1303,10 @@ function initializeCode() {
         responsiveWindow();
     }, true);
 }
+
+ document.querySelectorAll('td[contenteditable="true"]').forEach(cell => {
+            cell.addEventListener('blur', () => {
+                alert('Salário atualizado para: R$ ' + cell.innerText);
+        
+            });
+        });

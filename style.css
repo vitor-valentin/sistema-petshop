@@ -740,3 +740,47 @@ input {
         top: 75px;
     }
 }
+
+      td[contenteditable="true"] {
+            background-color: #fffbe6;
+            cursor: pointer;
+        }
+
+        td[contenteditable="true"]:focus {
+            outline: 2px solid #4CAF50;
+        }
+
+        .sidebarControlPanel {
+    overflow: hidden;
+    width: 220px;
+    height: 100vh;
+    background-color: black;
+    color: white;
+    position: fixed;
+    transition: width 0.5s ease;
+}
+
+.sidebarControlPanel ul {
+    list-style: none;
+}
+
+.sidebarControlPanel li {
+    width: 100%;
+    padding: 12px 16px;
+    cursor: pointer;
+    font-size: 20px;
+    transition: all 0.3s ease;
+}
+
+.sidebarControlPanel li i {
+    width: 30px;
+    padding-right: 10px;
+}
+
+.sidebarControlPanel li:hover {
+    background-color: lightgray;
+}
+
+.sidebarControlPanel li.active:hover {
+    background-color: gray;
+}
