@@ -1,3 +1,5 @@
+// TODO: Fix bug when changing the client on vendas, so it also changes the pets list
+
 const sidebarPlaceholder = document.getElementById("sidebar-placeholder");
 const headerPlaceholder = document.getElementById("header-placeholder");
 const pagePlaceholder = document.getElementById("page-placeholder");
@@ -124,6 +126,12 @@ function getClientNameById(id) {
     return cliente ? cliente.name : false;
 }
 
+function getPetNameById(id) {
+    const pets = JSON.parse(localStorage.getItem("vpPets"));
+    const pet = pets.find((p) => p.id === id);
+    return pet ? pet.name : false;
+}
+
 function formatReal(value) {
     return value.toLocaleString("pt-BR", {
         style: "currency",
@@ -132,10 +140,8 @@ function formatReal(value) {
 }
 
 function isValidCPF(cpf) {
-    cpf = cpf.replace(/[^\d]+/g, "");
-    if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
-
-    return true;
+    const regex = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
+    return regex.test(cpf);
 }
 
 function isValidDate(dateStr) {
@@ -284,13 +290,13 @@ function initializeCode() {
     checkPermissionLevel();
 
     function responsiveWindow() {
-        if(window.innerWidth < 980){
+        if (window.innerWidth < 980) {
             console.log("oi");
-            if(!sidebar.classList.contains("hidden")) toggleSideBar();
+            if (!sidebar.classList.contains("hidden")) toggleSideBar();
             headerMenu.classList.add("full");
             pagePlaceholder.querySelector(".content").classList.add("full");
             headerPlaceholder.querySelector(".user p")?.remove();
-            pageTitle.style.textAlign = "center";   
+            pageTitle.style.textAlign = "center";
         }
     }
 
@@ -358,6 +364,12 @@ function initializeCode() {
         const tbody = pagePlaceholder.querySelector("table tbody");
         const pageName = pagePlaceholder.querySelector(".content").id;
         const data = JSON.parse(localStorage.getItem(`vp${pageName}`)) || [];
+        
+        if(pageName === "Produtos") {
+            const activeStyle = document.getElementById("activeStyle");
+
+            activeStyle.innerHTML = "";
+        }
 
         if (!data.length) {
             let page = pageName.toLowerCase().slice(0, -1);
@@ -392,20 +404,34 @@ function initializeCode() {
             brand: "Marca",
             amount: "Quantidade",
             stock: "Estoque",
-            cpf: "CPF"
+            cpf: "CPF",
+            age: "Idade",
+            race: "Raça",
         };
 
         tbody.innerHTML = "";
+
+        let i = 1;
 
         rowsToDisplay.forEach((item) => {
             const tr = document.createElement("tr");
 
             fields.forEach((key) => {
                 const td = document.createElement("td");
-                td.setAttribute('data-label', fieldsName[key]);
+                td.setAttribute("data-label", fieldsName[key]);
 
-                if (pageName === "Vendas" && key === "idCliente") {
+                if (key === "idCliente") {
                     td.textContent = getClientNameById(item[key]);
+                } else if (pageName === "Produtos" && key === "stock") {
+                    td.textContent = item[key];
+            
+                    if (item[key] < 1) {
+                        activeStyle.innerHTML += `tbody tr:nth-child(${i}) td:first-child:before {content: "! "; color: red; font-size: 24px;} tbody tr:nth-child(${i}) {background-color: #ffdddd !important;} tbody tr:nth-child(${i}):hover {background-color: #f5c2c2 !important;}`;
+                    } else if (item[key] < 5) {
+                        activeStyle.innerHTML += `tbody tr:nth-child(${i}) td:first-child:before {content: "! "; color: #ffc107; font-size: 24px;} tbody tr:nth-child(${i}) {background-color: #fbecdb !important;} tbody tr:nth-child(${i}):hover {background-color: #f5dfc7 !important;}`;
+                    }
+                } else if (key === "idPet") {
+                    td.textContent = getPetNameById(item[key]);
                 } else if (
                     pageName === "Vendas" &&
                     (key === "products" || key === "services")
@@ -423,6 +449,9 @@ function initializeCode() {
                     btn.id = key;
                     btn.onclick = () => showVendaDetails(item.id, key);
                     td.appendChild(btn);
+                } else if (pageName === "Pets" && key === "age") {
+                    let text = item[key] > 1 ? " Anos" : " Ano";
+                    td.textContent = item[key] + text;
                 } else if (key === "price" || key === "totalValue") {
                     td.textContent = formatReal(item[key]);
                 } else {
@@ -434,7 +463,7 @@ function initializeCode() {
 
             if (options.actions) {
                 const td = document.createElement("td");
-                td.setAttribute('data-label', 'Ações');
+                td.setAttribute("data-label", "Ações");
                 options.actions.forEach((action) => {
                     const btn = document.createElement("button");
                     btn.className = action.class || "btn";
@@ -446,6 +475,7 @@ function initializeCode() {
             }
 
             tbody.appendChild(tr);
+            i++;
         });
     }
 
@@ -514,6 +544,7 @@ function initializeCode() {
             vendas: "totalSales",
             produtos: "totalProducts",
             servicos: "totalServices",
+            pets: "registeredPets",
         };
 
         let value = `${data.length} ${pageName}`;
@@ -522,7 +553,6 @@ function initializeCode() {
 
     function isCurrentMonth(dateString, birthday = true) {
         const currentMonth = new Date().getMonth() + 1;
-        const currentYear = new Date().getFullYear();
         const [day, month, year] = dateString.split("/");
 
         return parseInt(month, 10) === currentMonth;
@@ -579,7 +609,7 @@ function initializeCode() {
 
         products.forEach((product) => {
             if (product.stock == 0) outOfStock++;
-            totalStock += product.stock;
+            totalStock += parseInt(product.stock);
             totalStockValue += product.stock * product.price;
         });
 
@@ -656,12 +686,28 @@ function initializeCode() {
                     `${formatReal(monthValue)} Este Mês`
                 );
                 break;
+            case "Pets":
+                const mediumPetsClients =
+                    Math.round(calcMediumPetsClients() * 100) / 100;
+                updateDashboardCard(
+                    "mediumPetsClients",
+                    `${mediumPetsClients} Pet(s)`
+                );
+                break;
         }
+    }
+
+    function calcMediumPetsClients() {
+        const pets = JSON.parse(localStorage.getItem("vpPets"));
+        const clients = JSON.parse(localStorage.getItem("vpClientes"));
+
+        var medium = pets.length / clients.length;
+        return medium;
     }
 
     function toggleSideBar() {
         sidebar.classList.toggle("hidden");
-        if(window.innerWidth > 980) headerMenu.classList.toggle("full");
+        if (window.innerWidth > 980) headerMenu.classList.toggle("full");
         page.classList.toggle("full");
     }
 
@@ -687,7 +733,8 @@ function initializeCode() {
                     tableOptions.page = 1;
                     currentPage = 1;
 
-                    if(sidebar.classList.contains("hidden")) page.classList.add("full");
+                    if (sidebar.classList.contains("hidden"))
+                        page.classList.add("full");
 
                     renderTable(tableOptions);
                     renderPagination();
@@ -706,7 +753,7 @@ function initializeCode() {
         });
     }
 
-    function submitFormLogic(entityKey, form) {
+    function submitFormLogic(entityKey, form, dataEdited) {
         if (!form) return;
 
         const dataForm = new FormData(form);
@@ -714,6 +761,8 @@ function initializeCode() {
 
         if (entityKey === "vendas") {
             try {
+                console.log(data);
+                data.idPet = parseInt(data.idPet);
                 data.idCliente = parseInt(data.idCliente);
                 data.products = data.products ? JSON.parse(data.products) : {};
                 data.services = data.services ? JSON.parse(data.services) : {};
@@ -735,12 +784,34 @@ function initializeCode() {
                 const products =
                     JSON.parse(localStorage.getItem("vpProdutos")) || [];
 
-                for (const key in data.products) {
-                    const item = data.products[key];
-                    const product = products.find((p) => p.id == item.id);
-                    if (product) {
-                        const amountSold = parseInt(item.amount);
-                        if (product.stock < amountSold) {
+                const editId = form.getAttribute("data-edit-id");
+
+                if (data.products) {
+                    const previousSale = editId
+                        ? (
+                              JSON.parse(localStorage.getItem("vpVendas")) || []
+                          ).find((v) => v.id == editId)
+                        : null;
+
+                    for (const key in data.products) {
+                        const item = data.products[key];
+                        const product = products.find((p) => p.id == item.id);
+                        if (!product) continue;
+
+                        const newAmount = parseInt(item.amount);
+                        let previousAmount = 0;
+
+                        if (previousSale && previousSale.products) {
+                            const previousEntry = Object.values(
+                                previousSale.products
+                            ).find((p) => p.id == item.id);
+                            if (previousEntry)
+                                previousAmount = parseInt(previousEntry.amount);
+                        }
+
+                        const diff = newAmount - previousAmount;
+
+                        if (diff > 0 && product.stock < diff) {
                             showPopup(
                                 `Estoque insuficiente para o produto: ${product.name}`,
                                 "failure",
@@ -748,8 +819,14 @@ function initializeCode() {
                             );
                             return;
                         }
-                        product.stock -= amountSold;
+
+                        product.stock -= diff;
                     }
+
+                    localStorage.setItem(
+                        "vpProdutos",
+                        JSON.stringify(products)
+                    );
                 }
 
                 localStorage.setItem("vpProdutos", JSON.stringify(products));
@@ -804,6 +881,7 @@ function initializeCode() {
         if (data.idCliente) data.idCliente = parseInt(data.idCliente);
 
         if (entityKey == "vendas") delete data.nomeCliente;
+        if (entityKey == "vendas") delete data.nomePet;
 
         if (editId) {
             const index = registers.findIndex((item) => item.id == editId);
@@ -824,12 +902,14 @@ function initializeCode() {
             2000
         );
 
-        form.reset();
+        if (!dataEdited) {
+            form.reset();
 
-        document.getElementById("product-list").innerHTML = "";
-        document.getElementById("service-list").innerHTML = "";
-        document.getElementById("idCliente").value = "";
-        document.getElementById("totalValue").value = formatReal(0);
+            document.getElementById("product-list").innerHTML = "";
+            document.getElementById("service-list").innerHTML = "";
+            document.getElementById("idCliente").value = "";
+            document.getElementById("totalValue").value = formatReal(0);
+        }
     }
 
     function deleteRegister(id) {
@@ -948,11 +1028,16 @@ function initializeCode() {
         const clientes = JSON.parse(localStorage.getItem("vpClientes")) || [];
         const produtos = JSON.parse(localStorage.getItem("vpProdutos")) || [];
         const servicos = JSON.parse(localStorage.getItem("vpServicos")) || [];
+        const allPets = JSON.parse(localStorage.getItem("vpPets")) || [];
+        var pets = allPets;
 
         const idClienteInput = document.getElementById("idCliente");
         const suggestionsBox = document.getElementById("client-suggestions");
         const totalValueInput = document.getElementById("totalValue");
+        const idPetInput = document.getElementById("idPet");
+        const petSuggestionsBox = document.getElementById("pet-suggestions");
         let selectedCliente = null;
+        let selectedPet = null;
         let selectedProdutos = [];
         let selectedServicos = [];
 
@@ -971,6 +1056,7 @@ function initializeCode() {
 
         function addVendaHiddenInputs(form) {
             const clienteId = idClienteInput.getAttribute("data-id");
+            const petId = idPetInput.getAttribute("data-id");
             if (
                 !clienteId ||
                 !selectedCliente ||
@@ -981,10 +1067,26 @@ function initializeCode() {
                 return null;
             }
 
-            ["idCliente", "products", "services"].forEach((name) => {
+            if (
+                !petId ||
+                !selectedPet ||
+                idPetInput.value !== `${selectedPet.name}` ||
+                selectedPet.idCliente != selectedCliente.id
+            ) {
+                showPopup("Selecione um pet válido.", "failure", 2000);
+                return null;
+            }
+
+            ["idPet", "idCliente", "products", "services"].forEach((name) => {
                 const existing = form.querySelector(`input[name="${name}"]`);
                 if (existing) existing.remove();
             });
+
+            const hiddenPet = document.createElement("input");
+            hiddenPet.type = "hidden";
+            hiddenPet.name = "idPet";
+            hiddenPet.value = petId;
+            form.appendChild(hiddenPet);
 
             const hiddenCliente = document.createElement("input");
             hiddenCliente.type = "hidden";
@@ -1044,11 +1146,54 @@ function initializeCode() {
                     idClienteInput.value = `${c.name} (${c.cpf})`;
                     idClienteInput.setAttribute("data-id", c.id);
                     suggestionsBox.style.display = "none";
+
+                    selectedPet = null;
+                    idPetInput.value = "";
+                    idPetInput.removeAttribute("data-id");
+
+                    pets = allPets;
+                    pets = pets.filter((p) => {
+                        return p.idCliente === c.id;
+                    });
                 });
                 suggestionsBox.appendChild(li);
             });
 
             suggestionsBox.style.display = matches.length ? "block" : "none";
+        });
+
+        idPetInput.addEventListener("input", () => {
+            const query = idPetInput.value.toLowerCase();
+            petSuggestionsBox.innerHTML = "";
+            if (!query) {
+                petSuggestionsBox.style.display = "none";
+                return;
+            }
+
+            const matches = pets.filter((c) => {
+                const cleanedQuery = query.trim().toLowerCase();
+                const nameMatch = c.name.toLowerCase().includes(cleanedQuery);
+                return nameMatch;
+            });
+
+            matches.forEach((p) => {
+                const li = document.createElement("li");
+                li.textContent = `${p.name}`;
+                li.addEventListener("click", () => {
+                    selectedPet = p;
+                    idPetInput.value = `${p.name}`;
+                    idPetInput.setAttribute("data-id", p.id);
+                    petSuggestionsBox.style.display = "none";
+
+                    let c = clientes.find((c) => c.id === p.idCliente);
+                    selectedCliente = c;
+                    idClienteInput.value = `${c.name} (${c.cpf})`;
+                    idClienteInput.setAttribute("data-id", c.id);
+                });
+                petSuggestionsBox.appendChild(li);
+            });
+
+            petSuggestionsBox.style.display = matches.length ? "block" : "none";
         });
 
         document.addEventListener("click", (e) => {
@@ -1057,6 +1202,13 @@ function initializeCode() {
                 e.target !== idClienteInput
             ) {
                 suggestionsBox.style.display = "none";
+            }
+
+            if (
+                !petSuggestionsBox.contains(e.target) &&
+                e.target !== idPetInput
+            ) {
+                petSuggestionsBox.style.display = "none";
             }
         });
 
@@ -1168,6 +1320,17 @@ function initializeCode() {
         };
 
         if (dataToEdit) {
+            const pet = pets.find((p) => p.id == dataToEdit.idPet);
+            if (pet) {
+                selectedPet = pet;
+                idPetInput.value = `${pet.name}`;
+                idPetInput.setAttribute("data-id", pet.id);
+            }
+
+            pets = pets.filter((p) => {
+                return p.idCliente === dataToEdit.idCliente;
+            });
+
             const cliente = clientes.find((c) => c.id == dataToEdit.idCliente);
             if (cliente) {
                 selectedCliente = cliente;
@@ -1210,7 +1373,99 @@ function initializeCode() {
             const isValid = addVendaHiddenInputs(form);
             if (!isValid) return;
 
-            submitFormLogic("vendas", form);
+            submitFormLogic("vendas", form, dataToEdit ? true : false);
+        });
+    }
+
+    function initPetsForm(dataToEdit = null) {
+        const clientes = JSON.parse(localStorage.getItem("vpClientes")) || [];
+        const idClienteInput = document.getElementById("idCliente");
+        const suggestionsBox = document.getElementById("client-suggestions");
+        let selectedCliente = null;
+
+        function addVendaHiddenInputs(form) {
+            const clienteId = idClienteInput.getAttribute("data-id");
+            if (
+                !clienteId ||
+                !selectedCliente ||
+                idClienteInput.value !==
+                    `${selectedCliente.name} (${selectedCliente.cpf})`
+            ) {
+                showPopup("Selecione um cliente válido.", "failure", 2000);
+                return null;
+            }
+
+            const existingInput = form.querySelector('input[name="idCliente"]');
+            if (existingInput) existingInput.remove();
+
+            const hiddenCliente = document.createElement("input");
+            hiddenCliente.type = "hidden";
+            hiddenCliente.name = "idCliente";
+            hiddenCliente.value = clienteId;
+            form.appendChild(hiddenCliente);
+
+            return true;
+        }
+
+        idClienteInput.addEventListener("input", () => {
+            const query = idClienteInput.value.toLowerCase();
+            suggestionsBox.innerHTML = "";
+            if (!query) {
+                suggestionsBox.style.display = "none";
+                return;
+            }
+
+            const matches = clientes.filter((c) => {
+                const cleanedQuery = query.trim().toLowerCase();
+                const nameMatch = c.name.toLowerCase().includes(cleanedQuery);
+                const cleanedCpfQuery = cleanedQuery.replace(/\D/g, "");
+                const cpfMatch = cleanedCpfQuery
+                    ? c.cpf.replace(/\D/g, "").includes(cleanedCpfQuery)
+                    : false;
+                return nameMatch || cpfMatch;
+            });
+
+            matches.forEach((c) => {
+                const li = document.createElement("li");
+                li.textContent = `${c.name} (${c.cpf})`;
+                li.addEventListener("click", () => {
+                    selectedCliente = c;
+                    idClienteInput.value = `${c.name} (${c.cpf})`;
+                    idClienteInput.setAttribute("data-id", c.id);
+                    suggestionsBox.style.display = "none";
+                });
+                suggestionsBox.appendChild(li);
+            });
+
+            suggestionsBox.style.display = matches.length ? "block" : "none";
+        });
+
+        document.addEventListener("click", (e) => {
+            if (
+                !suggestionsBox.contains(e.target) &&
+                e.target !== idClienteInput
+            ) {
+                suggestionsBox.style.display = "none";
+            }
+        });
+
+        if (dataToEdit) {
+            const cliente = clientes.find((c) => c.id == dataToEdit.idCliente);
+            if (cliente) {
+                selectedCliente = cliente;
+                idClienteInput.value = `${cliente.name} (${cliente.cpf})`;
+                idClienteInput.setAttribute("data-id", cliente.id);
+            }
+        }
+
+        const form = document.getElementById("data-form");
+        form.addEventListener("submit", (e) => {
+            e.preventDefault();
+
+            const isValid = addVendaHiddenInputs(form);
+            if (!isValid) return;
+
+            submitFormLogic("pets", form, dataToEdit ? true : false);
         });
     }
 
@@ -1255,15 +1510,19 @@ function initializeCode() {
                             .setAttribute("data-edit-id", dataToEdit.id);
                     }
 
+                    let boolDataEdit = dataToEdit ? true : false;
+
                     applyInputMasks();
 
                     if (entityName == "vendas") {
                         initVendaForm(dataToEdit || null);
+                    } else if (entityName == "pets") {
+                        initPetsForm(dataToEdit || null);
                     } else {
                         form.addEventListener("submit", (e) => {
                             e.preventDefault();
 
-                            submitFormLogic(entityName, form);
+                            submitFormLogic(entityName, form, boolDataEdit);
                         });
                     }
 
@@ -1297,7 +1556,11 @@ function initializeCode() {
         toggleConfigBoxUser();
     });
 
-    window.addEventListener('resize', function(event) {
-        responsiveWindow();
-    }, true);
+    window.addEventListener(
+        "resize",
+        function (event) {
+            responsiveWindow();
+        },
+        true
+    );
 }

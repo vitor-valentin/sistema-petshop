@@ -1,63 +1,69 @@
 <div class="content">
     <div class="form-box">
-        <h2 id="form-title">Cadastrar Novo Produto</h2>
+        <h2 id="form-title">Cadastrar Novo Pet</h2>
+
         <form id="data-form">
             <div class="input-box">
                 <label for="name">Nome</label>
                 <input
                     type="text"
-                    name="name"
                     id="name"
-                    placeholder="Digite o nome do produto"
+                    name="name"
+                    placeholder="Digite o nome completo"
                     required
                 />
             </div>
+
             <div class="input-box">
-                <label for="price">Preço</label>
+                <label for="race">Raça</label>
                 <input
                     type="text"
-                    name="price"
-                    id="price"
-                    placeholder="R$ 50,00"
+                    id="race"
+                    name="race"
+                    placeholder="Cachorro"
                     required
                 />
             </div>
+
             <div class="input-box">
-                <label for="brand">Marca</label>
+                <label for="age">Idade</label>
                 <input
                     type="text"
-                    name="brand"
-                    id="brand"
-                    placeholder="Pet Dental"
+                    id="age"
+                    name="age"
+                    placeholder="Idade do Pet"
                     required
                 />
             </div>
+
             <div class="input-box">
-                <label for="amount">Quantidade ou Volume</label>
+                <label for="gender">Sexo</label>
+                <select id="gender" name="gender" required>
+                    <option value="">Selecione</option>
+                    <option value="Feminino">Feminino</option>
+                    <option value="Masculino">Masculino</option>
+                </select>
+            </div>
+
+            <div class="input-box">
+                <label for="idCliente">Cliente</label>
                 <input
                     type="text"
-                    name="amount"
-                    id="amount"
-                    placeholder="100ml/1 unidade"
+                    name="nomeCliente"
+                    id="idCliente"
+                    placeholder="Digite nome ou CPF"
+                    autocomplete="off"
                     required
                 />
+                <ul id="client-suggestions" class="suggestions-list"></ul>
             </div>
-            <div class="input-box">
-                <label for="stock">Estoque</label>
-                <input
-                    type="text"
-                    name="stock"
-                    id="stock"
-                    placeholder="Quantidade em estoque"
-                    required
-                />
-            </div>
+
             <div class="form-buttons">
                 <button type="submit" class="btn btn-primary">Salvar</button>
                 <button
                     type="button"
                     class="btn btn-danger"
-                    onclick="changePage('produtos')"
+                    onclick="changePage('pets')"
                 >
                     Cancelar
                 </button>

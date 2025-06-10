@@ -4,6 +4,19 @@
 
         <form id="data-form">
             <div class="input-box">
+                <label for="idPet">Pet</label>
+                <input
+                    type="text"
+                    name="nomePet"
+                    id="idPet"
+                    placeholder="Digite nome do pet"
+                    autocomplete="off"
+                    required
+                />
+                <ul id="pet-suggestions" class="suggestions-list"></ul>
+            </div>
+
+            <div class="input-box">
                 <label for="idCliente">Cliente</label>
                 <input
                     type="text"

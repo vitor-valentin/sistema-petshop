@@ -118,6 +118,7 @@ localStorage.setItem("vpClientes", JSON.stringify([
 localStorage.setItem("vpVendas", JSON.stringify([
     {
         id: 1,
+        idPet: 1,
         idCliente: 1,
         soldDate: "12/03/2025",
         products: {
@@ -131,6 +132,7 @@ localStorage.setItem("vpVendas", JSON.stringify([
     },
     {
         id: 2,
+        idPet: 2,
         idCliente: 2,
         soldDate: "13/05/2025",
         products: {
@@ -141,6 +143,7 @@ localStorage.setItem("vpVendas", JSON.stringify([
     },
     {
         id: 3,
+        idPet: 3,
         idCliente: 3,
         soldDate: "14/05/2025",
         products: {},
@@ -152,6 +155,7 @@ localStorage.setItem("vpVendas", JSON.stringify([
     },
     {
         id: 4,
+        idPet: 4,
         idCliente: 4,
         soldDate: "14/05/2025",
         products: {
@@ -165,6 +169,7 @@ localStorage.setItem("vpVendas", JSON.stringify([
     },
     {
         id: 5,
+        idPet: 5,
         idCliente: 5,
         soldDate: "17/05/2025",
         products: {
@@ -175,6 +180,7 @@ localStorage.setItem("vpVendas", JSON.stringify([
     },
     {
         id: 6,
+        idPet: 6,
         idCliente: 6,
         soldDate: "15/05/2025",
         products: {
@@ -186,6 +192,7 @@ localStorage.setItem("vpVendas", JSON.stringify([
     },
     {
         id: 7,
+        idPet: 7,
         idCliente: 7,
         soldDate: "16/05/2025",
         products: {
@@ -199,6 +206,7 @@ localStorage.setItem("vpVendas", JSON.stringify([
     },
     {
         id: 8,
+        idPet: 8,
         idCliente: 8,
         soldDate: "16/05/2025",
         products: {},
@@ -209,6 +217,7 @@ localStorage.setItem("vpVendas", JSON.stringify([
     },
     {
         id: 9,
+        idPet: 9,
         idCliente: 9,
         soldDate: "17/05/2025",
         products: {
@@ -219,6 +228,7 @@ localStorage.setItem("vpVendas", JSON.stringify([
     },
     {
         id: 10,
+        idPet: 10,
         idCliente: 10,
         soldDate: "17/05/2025",
         products: {
@@ -368,5 +378,89 @@ localStorage.setItem("vpServicos", JSON.stringify([
         id: 10,
         name: "Pintura de pelos",
         price: 60.00
+    }
+]));
+
+//Pets
+localStorage.setItem("vpPets", JSON.stringify([
+    {
+        id: 1,
+        name: "Rex",
+        race: "Cachorro",
+        age: 6,
+        gender: "Macho",
+        idCliente: 1
+    },
+    {
+        id: 2,
+        name: "Luna",
+        race: "Gato",
+        age: 3,
+        gender: "Fêmea",
+        idCliente: 2
+    },
+    {
+        id: 3,
+        name: "Thor",
+        race: "Cachorro",
+        age: 4,
+        gender: "Macho",
+        idCliente: 3
+    },
+    {
+        id: 4,
+        name: "Mia",
+        race: "Gato",
+        age: 2,
+        gender: "Fêmea",
+        idCliente: 4
+    },
+    {
+        id: 5,
+        name: "Bob",
+        race: "Coelho",
+        age: 1,
+        gender: "Macho",
+        idCliente: 2
+    },
+    {
+        id: 6,
+        name: "Nina",
+        race: "Cachorro",
+        age: 5,
+        gender: "Fêmea",
+        idCliente: 5
+    },
+    {
+        id: 7,
+        name: "Max",
+        race: "Papagaio",
+        age: 7,
+        gender: "Macho",
+        idCliente: 3
+    },
+    {
+        id: 8,
+        name: "Mel",
+        race: "Gato",
+        age: 3,
+        gender: "Fêmea",
+        idCliente: 6
+    },
+    {
+        id: 9,
+        name: "Tobby",
+        race: "Cachorro",
+        age: 8,
+        gender: "Macho",
+        idCliente: 4
+    },
+    {
+        id: 10,
+        name: "Amora",
+        race: "Hamster",
+        age: 1,
+        gender: "Fêmea",
+        idCliente: 7
     }
 ]));
