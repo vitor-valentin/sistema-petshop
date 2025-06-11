@@ -1,5 +1,3 @@
-// TODO: Fix bug when changing the client on vendas, so it also changes the pets list
-
 const sidebarPlaceholder = document.getElementById("sidebar-placeholder");
 const headerPlaceholder = document.getElementById("header-placeholder");
 const pagePlaceholder = document.getElementById("page-placeholder");
@@ -238,13 +236,15 @@ function initializeCode() {
     const sidebarBtn = document.querySelector(".menu");
     const headerMenu = document.querySelector("header");
     const sidebar = document.querySelector(".sidebar");
-    const sidebarBtns = document.querySelectorAll("#sidebarBtn");
     const username = document.querySelector("username");
     const login = JSON.parse(localStorage.getItem("vpLogin"));
     const pageTitle = document.getElementById("page-title");
     const vendaDetails = document.querySelector(".vendas-details");
     const closeBtn = vendaDetails.querySelector(".close-btn");
     const userConfigOpenBtn = document.querySelector(".user i");
+    const controlPanelBtn = document.getElementById("controlPanel");
+
+    var sidebarBtns = document.querySelectorAll("#sidebarBtn");
 
     let paginationContainer = document.querySelector(".pagination");
 
@@ -364,8 +364,8 @@ function initializeCode() {
         const tbody = pagePlaceholder.querySelector("table tbody");
         const pageName = pagePlaceholder.querySelector(".content").id;
         const data = JSON.parse(localStorage.getItem(`vp${pageName}`)) || [];
-        
-        if(pageName === "Produtos") {
+
+        if (pageName === "Produtos") {
             const activeStyle = document.getElementById("activeStyle");
 
             activeStyle.innerHTML = "";
@@ -396,6 +396,7 @@ function initializeCode() {
             gender: "Sexo",
             birthDate: "Data de Nascimento",
             idCliente: "Cliente",
+            idPet: "Pet",
             soldDate: "Data de Venda",
             products: "Produtos",
             services: "Serviços",
@@ -424,7 +425,7 @@ function initializeCode() {
                     td.textContent = getClientNameById(item[key]);
                 } else if (pageName === "Produtos" && key === "stock") {
                     td.textContent = item[key];
-            
+
                     if (item[key] < 1) {
                         activeStyle.innerHTML += `tbody tr:nth-child(${i}) td:first-child:before {content: "! "; color: red; font-size: 24px;} tbody tr:nth-child(${i}) {background-color: #ffdddd !important;} tbody tr:nth-child(${i}):hover {background-color: #f5c2c2 !important;}`;
                     } else if (item[key] < 5) {
@@ -1469,6 +1470,39 @@ function initializeCode() {
         });
     }
 
+    function changeToControlPanel() {
+        Promise.all([
+            fetch("templates/sidebar.controlpanel.html")
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error("Erro ao carregar a sidebar do painel de controle.");
+                    }
+                    return response.text();
+                })
+                .then((data) => {
+                    sidebar.innerHTML = data;
+                    sidebarBtns = document.querySelectorAll(".sidebar.dark #sidebarBtn");
+
+                    sidebarBtns.forEach((btn) => {
+                        btn.addEventListener("click", () => {
+                            let redirectPage = btn.getAttribute("redirectPage");
+                            changePage(redirectPage, btn);
+                
+                            removeCurrActiveBtnClass();
+                            btn.classList.add("active");
+                        });
+                    });
+                }),
+        ])
+            .then(() => {
+                changePage("usuarios");
+                toggleConfigBoxUser();
+            })
+            .catch((error) => {
+                console.error(`Erro: ${error}`);
+            });
+    }
+
     window.openFormPage = function (
         entityName,
         formTitle = "Cadastrar",
@@ -1563,4 +1597,8 @@ function initializeCode() {
         },
         true
     );
+
+    controlPanelBtn.addEventListener("click", () => {
+        changeToControlPanel();
+    });
 }

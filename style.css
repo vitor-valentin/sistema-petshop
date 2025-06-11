@@ -685,6 +685,22 @@ input {
     background-color: #c82333;
 }
 
+.sidebar.dark {
+    background-color: #004c9d;
+}
+
+.sidebar.dark .active {
+    background-color: #003773;
+}
+
+.sidebar.dark .active:hover {
+    background-color: #012750 !important;
+}
+
+.sidebar.dark li:hover {
+    background-color: #002e63;
+}
+
 @media (max-width: 980px) {
     .sidebar {
         width: 100%;
