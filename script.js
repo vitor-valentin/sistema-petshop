@@ -1,35 +1,76 @@
 const sidebarPlaceholder = document.getElementById("sidebar-placeholder");
 const headerPlaceholder = document.getElementById("header-placeholder");
 const pagePlaceholder = document.getElementById("page-placeholder");
-const validLogins = JSON.parse(localStorage.getItem("vpValidLogins")) || [];
+
+function validLogins() {
+    return JSON.parse(localStorage.getItem("vpValidLogins")) || [];
+}
+
+function login() {
+    return JSON.parse(localStorage.getItem("vpLogin")) || [];
+}
+
+function getUrlParams() {
+    return new URLSearchParams(window.location.href);
+}
+
+function getUrlWithoutParameters() {
+    const url = new URL(window.location.href);
+    return url.origin + url.pathname;
+}
 
 function verifyLogin() {
-    const login = JSON.parse(localStorage.getItem("vpLogin")) || [];
+    if (!login() || !login().username || !login().password) return false;
 
-    if (!login || !login.username || !login.password) return false;
-
-    const userFound = validLogins.some(
+    const userFound = validLogins().some(
         (user) =>
-            user.username === login.username && user.password === login.password
+            user.username === login().username &&
+            user.password === login().password
     );
 
     return userFound;
 }
 
-if (verifyLogin()) {
-    Promise.all([
-        fetch("templates/header.html")
+function loadSite() {
+    const headerPromise = fetch("templates/header.html")
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error("Erro ao carregar o cabeçalho");
+            }
+            return response.text();
+        })
+        .then((data) => {
+            headerPlaceholder.innerHTML = data;
+        });
+
+    let pagePromise, sidebarPromise;
+
+    if (getUrlParams().has(`${getUrlWithoutParameters()}?controlPanel`)) {
+        pagePromise = fetch("pages/usuarios.html")
             .then((response) => {
                 if (!response.ok) {
-                    throw new Error("Erro ao carregar o cabeçalho");
+                    throw new Error("Erro ao carregar a página usuarios");
                 }
                 return response.text();
             })
             .then((data) => {
-                headerPlaceholder.innerHTML = data;
-            }),
+                pagePlaceholder.innerHTML = data;
+            });
 
-        fetch("pages/clientes.html")
+        sidebarPromise = fetch("templates/sidebar.controlpanel.html")
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(
+                        "Erro ao carregar a sidebar do painel de controle"
+                    );
+                }
+                return response.text();
+            })
+            .then((data) => {
+                sidebarPlaceholder.innerHTML = data;
+            });
+    } else {
+        pagePromise = fetch("pages/clientes.html")
             .then((response) => {
                 if (!response.ok) {
                     throw new Error("Erro ao carregar a página clientes");
@@ -38,9 +79,9 @@ if (verifyLogin()) {
             })
             .then((data) => {
                 pagePlaceholder.innerHTML = data;
-            }),
+            });
 
-        fetch("templates/sidebar.html")
+        sidebarPromise = fetch("templates/sidebar.html")
             .then((response) => {
                 if (!response.ok) {
                     throw new Error("Erro ao carregar a sidebar");
@@ -49,10 +90,19 @@ if (verifyLogin()) {
             })
             .then((data) => {
                 sidebarPlaceholder.innerHTML = data;
-            }),
-    ])
+            });
+    }
+
+    // Espera todos os fetches antes de continuar
+    return Promise.all([headerPromise, pagePromise, sidebarPromise]);
+}
+
+if (verifyLogin()) {
+    Promise.all([loadSite()])
         .then(() => {
-            initializeCode();
+            requestAnimationFrame(() => {
+                initializeCode();
+            });
         })
         .catch((error) => {
             console.error(`Erro: ${error}`);
@@ -87,15 +137,16 @@ function loginPage() {
         const usernameInput = document.getElementById("user").value.trim();
         const passwordInput = document.getElementById("passwd").value;
 
-        const user = validLogins.find(
+        const user = validLogins().find(
             (user) =>
                 user.username == usernameInput && user.password == passwordInput
         );
 
         if (user) {
+            let loginId = user.id;
             let username = user.username;
             let password = user.password;
-            const login = { username, password };
+            const login = { loginId, username, password };
 
             localStorage.setItem("vpLogin", JSON.stringify(login));
 
@@ -232,18 +283,22 @@ function showConfirm({
     });
 }
 
+function permissionLevelTranscript(level) {
+    if (level === 1) return "Parcial";
+    else return "Total";
+}
+
 function initializeCode() {
     const sidebarBtn = document.querySelector(".menu");
     const headerMenu = document.querySelector("header");
-    const sidebar = document.querySelector(".sidebar");
     const username = document.querySelector("username");
-    const login = JSON.parse(localStorage.getItem("vpLogin"));
     const pageTitle = document.getElementById("page-title");
     const vendaDetails = document.querySelector(".vendas-details");
     const closeBtn = vendaDetails.querySelector(".close-btn");
     const userConfigOpenBtn = document.querySelector(".user i");
     const controlPanelBtn = document.getElementById("controlPanel");
 
+    var sidebar = document.querySelector(".sidebar");
     var sidebarBtns = document.querySelectorAll("#sidebarBtn");
 
     let paginationContainer = document.querySelector(".pagination");
@@ -279,11 +334,18 @@ function initializeCode() {
 
     var page = document.querySelector(".content");
 
-    username.textContent = login.username;
+    username.textContent = login().username;
 
     renderTable(tableOptions);
     renderPagination();
-    updateSectionCards("Clientes");
+
+    if (getUrlParams().has(`${getUrlWithoutParameters()}?controlPanel`)) {
+        pageTitle.textContent = "Usuarios";
+        updateSectionCards("Usuarios");
+    } else {
+        pageTitle.textContent = "Clientes";
+        updateSectionCards("Clientes");
+    }
 
     responsiveWindow();
 
@@ -363,7 +425,11 @@ function initializeCode() {
     function renderTable(options) {
         const tbody = pagePlaceholder.querySelector("table tbody");
         const pageName = pagePlaceholder.querySelector(".content").id;
-        const data = JSON.parse(localStorage.getItem(`vp${pageName}`)) || [];
+        var data = JSON.parse(localStorage.getItem(`vp${pageName}`)) || [];
+
+        if (pageName === "Usuarios") {
+            data = JSON.parse(localStorage.getItem("vpValidLogins"));
+        }
 
         if (pageName === "Produtos") {
             const activeStyle = document.getElementById("activeStyle");
@@ -408,6 +474,8 @@ function initializeCode() {
             cpf: "CPF",
             age: "Idade",
             race: "Raça",
+            roleId: "Nível de Permissão",
+            username: "Nome",
         };
 
         tbody.innerHTML = "";
@@ -420,9 +488,23 @@ function initializeCode() {
             fields.forEach((key) => {
                 const td = document.createElement("td");
                 td.setAttribute("data-label", fieldsName[key]);
+                if (pageName === "Usuarios" && key === "password") return;
 
                 if (key === "idCliente") {
                     td.textContent = getClientNameById(item[key]);
+                } else if (key === "roleId") {
+                    const firstTd = document.createElement("td");
+                    firstTd.setAttribute("data-label", "Cargo");
+
+                    var [cargo, permissionLvl] = getCargoAndPermissionLvlById(
+                        item.id
+                    );
+                    permissionLvl = permissionLevelTranscript(permissionLvl);
+
+                    firstTd.textContent = cargo;
+                    tr.appendChild(firstTd);
+
+                    td.textContent = permissionLvl;
                 } else if (pageName === "Produtos" && key === "stock") {
                     td.textContent = item[key];
 
@@ -467,7 +549,10 @@ function initializeCode() {
                 td.setAttribute("data-label", "Ações");
                 options.actions.forEach((action) => {
                     const btn = document.createElement("button");
-                    btn.className = action.class || "btn";
+                    let dark = "";
+                    if (pageName === "Usuarios" || pageName === "Cargos")
+                        dark = "dark";
+                    btn.className = `${action.class} ${dark}` || "btn";
                     btn.textContent = action.label;
                     btn.onclick = () => action.onClick(item);
                     td.appendChild(btn);
@@ -537,7 +622,9 @@ function initializeCode() {
     }
 
     function updateCountDataDashboards(dataName, pageName) {
-        const data = JSON.parse(localStorage.getItem(dataName));
+        var data = JSON.parse(localStorage.getItem(dataName));
+        if (pageName === "Usuarios")
+            data = JSON.parse(localStorage.getItem("vpValidLogins"));
         if (!data) return;
 
         const countDashboards = {
@@ -546,6 +633,7 @@ function initializeCode() {
             produtos: "totalProducts",
             servicos: "totalServices",
             pets: "registeredPets",
+            usuarios: "registeredUsers",
         };
 
         let value = `${data.length} ${pageName}`;
@@ -762,7 +850,6 @@ function initializeCode() {
 
         if (entityKey === "vendas") {
             try {
-                console.log(data);
                 data.idPet = parseInt(data.idPet);
                 data.idCliente = parseInt(data.idCliente);
                 data.products = data.products ? JSON.parse(data.products) : {};
@@ -868,7 +955,8 @@ function initializeCode() {
         }
 
         const editId = form.getAttribute("data-edit-id");
-        const storageKey = `vp${capitalizeFirstLetter(entityKey)}`;
+        var storageKey = `vp${capitalizeFirstLetter(entityKey)}`;
+        if (entityKey === "usuarios") storageKey = "vpValidLogins";
         let registers = JSON.parse(localStorage.getItem(storageKey)) || [];
 
         if (data.price)
@@ -880,6 +968,7 @@ function initializeCode() {
             );
         if (data.totalValue) data.totalValue = parseFloat(data.totalValue);
         if (data.idCliente) data.idCliente = parseInt(data.idCliente);
+        if (data.roleId) data.roleId = parseInt(data.roleId);
 
         if (entityKey == "vendas") delete data.nomeCliente;
         if (entityKey == "vendas") delete data.nomePet;
@@ -903,13 +992,34 @@ function initializeCode() {
             2000
         );
 
+        if (entityKey === "usuarios") {
+            const findLogin = validLogins().filter(
+                (vl) =>
+                    data.username === vl.username &&
+                    data.password === vl.password
+            )[0];
+            if (findLogin.id === login().loginId) {
+                localStorage.setItem(
+                    "vpLogin",
+                    JSON.stringify({
+                        loginId: login().loginId,
+                        username: data.username,
+                        password: data.password,
+                    })
+                );
+            }
+        }
+
         if (!dataEdited) {
             form.reset();
 
-            document.getElementById("product-list").innerHTML = "";
-            document.getElementById("service-list").innerHTML = "";
-            document.getElementById("idCliente").value = "";
-            document.getElementById("totalValue").value = formatReal(0);
+            if (entityKey === "vendas") {
+                document.getElementById("product-list").innerHTML = "";
+                document.getElementById("service-list").innerHTML = "";
+                document.getElementById("totalValue").value = formatReal(0);
+            } else if (entityKey === "vendas" || entityKey === "pets") {
+                document.getElementById("idCliente").value = "";
+            }
         }
     }
 
@@ -1000,16 +1110,29 @@ function initializeCode() {
     }
 
     function checkPermissionLevel() {
-        const login = JSON.parse(localStorage.getItem("vpLogin"));
-        const loginInfo = validLogins.filter(
+        const cargos = JSON.parse(localStorage.getItem("vpCargos"));
+
+        const loginInfo = validLogins().filter(
             (vl) =>
-                vl.username === login.username && vl.password === login.password
+                vl.username === login().username &&
+                vl.password === login().password
         )[0];
 
-        if (loginInfo.permissionLevel < 2) {
+        const permissionLvl = cargos.filter((c) => c.id === loginInfo.roleId)[0]
+            .permissionLevel;
+
+        if (permissionLvl < 2) {
             const controlPanel = document.getElementById("controlPanel");
             controlPanel.remove();
         }
+    }
+
+    function getCargoAndPermissionLvlById(id) {
+        const cargos = JSON.parse(localStorage.getItem("vpCargos"));
+        const roleId = validLogins().filter((vl) => vl.id === id)[0].roleId;
+        const userCargo = cargos.filter((c) => c.id === roleId)[0];
+
+        return [userCargo.name, userCargo.permissionLevel];
     }
 
     function enforceStockLimit(qtyInput, selectInput) {
@@ -1470,28 +1593,68 @@ function initializeCode() {
         });
     }
 
+    function initUsersForm(dataToEdit = null) {
+        const cargos = JSON.parse(localStorage.getItem("vpCargos")) || [];
+        const selectForm = document.getElementById("roleId");
+
+        cargos.forEach((role) => {
+            const option = document.createElement("option");
+            option.value = role.id;
+            option.textContent = role.name;
+            selectForm.appendChild(option);
+        });
+
+        if (dataToEdit) {
+            const cargo = cargos.find((c) => c.id == dataToEdit.roleId);
+            if (cargo) {
+                var opts = selectForm.options;
+                for (var i = 0; i < opts.length; i++) {
+                    if (opts[i].value == cargo.id) {
+                        opts[i].selected = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        const form = document.getElementById("data-form");
+        form.addEventListener("submit", (e) => {
+            e.preventDefault();
+
+            submitFormLogic("usuarios", form, dataToEdit ? true : false);
+        });
+    }
+
     function changeToControlPanel() {
         Promise.all([
             fetch("templates/sidebar.controlpanel.html")
                 .then((response) => {
                     if (!response.ok) {
-                        throw new Error("Erro ao carregar a sidebar do painel de controle.");
+                        throw new Error(
+                            "Erro ao carregar a sidebar do painel de controle."
+                        );
                     }
                     return response.text();
                 })
                 .then((data) => {
-                    sidebar.innerHTML = data;
-                    sidebarBtns = document.querySelectorAll(".sidebar.dark #sidebarBtn");
+                    sidebarPlaceholder.innerHTML = data;
+                    sidebar = document.querySelector(".sidebar");
+                    sidebarBtns = document.querySelectorAll(
+                        ".sidebar.dark #sidebarBtn"
+                    );
 
                     sidebarBtns.forEach((btn) => {
                         btn.addEventListener("click", () => {
                             let redirectPage = btn.getAttribute("redirectPage");
                             changePage(redirectPage, btn);
-                
+
                             removeCurrActiveBtnClass();
                             btn.classList.add("active");
                         });
                     });
+
+                    const newUrl = `${window.location.pathname}?controlPanel`;
+                    history.pushState(null, "", newUrl);
                 }),
         ])
             .then(() => {
@@ -1552,6 +1715,8 @@ function initializeCode() {
                         initVendaForm(dataToEdit || null);
                     } else if (entityName == "pets") {
                         initPetsForm(dataToEdit || null);
+                    } else if (entityName == "usuarios") {
+                        initUsersForm(dataToEdit || null);
                     } else {
                         form.addEventListener("submit", (e) => {
                             e.preventDefault();
