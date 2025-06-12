@@ -1470,39 +1470,86 @@ function initializeCode() {
         });
     }
 
-    function changeToControlPanel() {
-        Promise.all([
-            fetch("templates/sidebar.controlpanel.html")
-                .then((response) => {
-                    if (!response.ok) {
-                        throw new Error("Erro ao carregar a sidebar do painel de controle.");
-                    }
-                    return response.text();
-                })
-                .then((data) => {
-                    sidebar.innerHTML = data;
-                    sidebarBtns = document.querySelectorAll(".sidebar.dark #sidebarBtn");
+    // Variáveis globais (adicione dentro de initializeCode)
+let previousPage = null;
+let previousSidebar = null;
+let previousTitle = null;
+let originalControlPanelBtn = null;
 
-                    sidebarBtns.forEach((btn) => {
-                        btn.addEventListener("click", () => {
-                            let redirectPage = btn.getAttribute("redirectPage");
-                            changePage(redirectPage, btn);
-                
-                            removeCurrActiveBtnClass();
-                            btn.classList.add("active");
-                        });
-                    });
-                }),
-        ])
-            .then(() => {
-                changePage("usuarios");
-                toggleConfigBoxUser();
-            })
-            .catch((error) => {
-                console.error(`Erro: ${error}`);
+function changeToControlPanel() {
+    const controlPanelBtn = document.getElementById("controlPanel");
+
+    // Salvar conteúdo atual
+    previousPage = pagePlaceholder.innerHTML;
+    previousSidebar = sidebar.innerHTML;
+    previousTitle = pageTitle.textContent;
+
+    // Salvar o botão original para uso posterior
+    originalControlPanelBtn = controlPanelBtn.cloneNode(true);
+
+    // Criar botão "Retornar" com mesmo estilo
+    const returnBtn = controlPanelBtn.cloneNode(true);
+    returnBtn.id = "returnButton";
+    returnBtn.innerHTML = `<i class="fa-solid fa-arrow-left"></i> Retornar`;
+
+    // Substituir o botão
+    controlPanelBtn.parentNode.replaceChild(returnBtn, controlPanelBtn);
+
+    // Evento do botão "Retornar"
+    returnBtn.addEventListener("click", () => {
+        if (previousPage && previousSidebar && previousTitle) {
+            // Restaurar conteúdo
+            pagePlaceholder.innerHTML = previousPage;
+            sidebar.innerHTML = previousSidebar;
+            pageTitle.textContent = previousTitle;
+
+            // Restaurar eventos do sidebar
+            sidebarBtns = document.querySelectorAll("#sidebarBtn");
+            sidebarBtns.forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    let redirectPage = btn.getAttribute("redirectPage");
+                    changePage(redirectPage, btn);
+                    removeCurrActiveBtnClass();
+                    btn.classList.add("active");
+                });
             });
-    }
 
+            // Restaurar o botão original
+            originalControlPanelBtn.addEventListener("click", changeToControlPanel);
+            returnBtn.parentNode.replaceChild(originalControlPanelBtn, returnBtn);
+        }
+    });
+
+    // Carregar painel de controle
+    fetch("templates/sidebar.controlpanel.html")
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error("Erro ao carregar a sidebar do painel de controle.");
+            }
+            return response.text();
+        })
+        .then((data) => {
+            sidebar.innerHTML = data;
+            sidebarBtns = document.querySelectorAll(".sidebar.dark #sidebarBtn");
+
+            sidebarBtns.forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    let redirectPage = btn.getAttribute("redirectPage");
+                    changePage(redirectPage, btn);
+                    removeCurrActiveBtnClass();
+                    btn.classList.add("active");
+                });
+            });
+
+            changePage("usuarios");
+            toggleConfigBoxUser();
+        })
+        .catch((error) => {
+            console.error(`Erro: ${error}`);
+        });
+}
+
+    
     window.openFormPage = function (
         entityName,
         formTitle = "Cadastrar",
