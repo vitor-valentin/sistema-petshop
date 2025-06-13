@@ -204,6 +204,10 @@ li.active {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+.card-box.dark {
+    border-color: #004c9d;
+}
+
 .card-box h4 {
     font-weight: 600;
     margin-bottom: 0.5rem;
@@ -228,14 +232,26 @@ li.active {
     color: #000;
 }
 
+.btn-warning.darj {
+    background-color: #e5ae09;
+}
+
 .btn-danger {
     background-color: #dc3545;
     color: white;
 }
 
+.btn-danger.dark {
+    background-color: #cb2f3e;
+}
+
 .btn-primary {
     background-color: #007bff;
     color: white;
+}
+
+.btn-primary.dark {
+    background-color: #004c9d;
 }
 
 .tableContent table {
@@ -258,6 +274,10 @@ li.active {
 .tableContent thead {
     background-color: #007bff;
     color: white;
+}
+
+.tableContent.dark thead {
+    background-color: #004c9d;
 }
 
 .tableContent tbody tr {

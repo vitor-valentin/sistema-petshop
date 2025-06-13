@@ -7,15 +7,27 @@ localStorage.setItem("vpValidLogins", JSON.stringify([
         username: "Vitor", 
         email: "vitor.rohling.becker@gmail.com", 
         password: "123456",
-        role: "Gerente",
-        permissionLevel: 2
+        roleId: 1
     },
     {
         id: 2,
         username: "Eduardo",
         email: "eduardo@gmail.com",
         password: "123456",
-        role: "Doutor Veterinário",
+        roleId: 2
+    }
+]));
+
+//Cargos:
+localStorage.setItem("vpCargos", JSON.stringify([
+    {
+        id: 1,
+        name: "Gerente",
+        permissionLevel: 2
+    },
+    {
+        id: 2,
+        name: "Doutor Veterinário",
         permissionLevel: 1
     }
 ]));
