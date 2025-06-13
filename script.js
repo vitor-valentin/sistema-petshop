@@ -505,6 +505,9 @@ function initializeCode() {
                     tr.appendChild(firstTd);
 
                     td.textContent = permissionLvl;
+                }else if (key === "permissionLevel") {
+                    var permLvl = permissionLevelTranscript(item[key]);
+                    td.textContent = permLvl;
                 } else if (pageName === "Produtos" && key === "stock") {
                     td.textContent = item[key];
 
@@ -567,7 +570,7 @@ function initializeCode() {
 
     function renderPagination() {
         const pageName = pagePlaceholder.querySelector(".content").id;
-        const data = JSON.parse(localStorage.getItem(`vp${pageName}`)) || [];
+        const data = pageName === "Usuarios" ? validLogins() : JSON.parse(localStorage.getItem(`vp${pageName}`)) || [];
         const totalPages = Math.ceil(data.length / rowsPerPage);
 
         paginationContainer.innerHTML = "";
@@ -634,6 +637,7 @@ function initializeCode() {
             servicos: "totalServices",
             pets: "registeredPets",
             usuarios: "registeredUsers",
+            cargos: "registeredRoles"
         };
 
         let value = `${data.length} ${pageName}`;
@@ -783,7 +787,15 @@ function initializeCode() {
                     `${mediumPetsClients} Pet(s)`
                 );
                 break;
+            case "Usuarios":
+                break;
         }
+    }
+
+    //TODO: FINISH THIS
+    function getAmountUsersPerPermissionLvl() {
+        const users = validLogins();
+
     }
 
     function calcMediumPetsClients() {
