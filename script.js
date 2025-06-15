@@ -819,10 +819,17 @@ function initializeCode() {
     }
 
     function isCurrentMonth(dateString, birthday = true) {
-        const currentMonth = new Date().getMonth() + 1;
-        const [day, month, year] = dateString.split("/");
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1;
+        const currentYear = now.getFullYear();
 
-        return parseInt(month, 10) === currentMonth;
+        const [day, month, year] = dateString.split("/").map(Number);
+
+        if (birthday) {
+            return month === currentMonth;
+        } else {
+            return month === currentMonth && year === currentYear;
+        }
     }
 
     function countBirthdays() {
