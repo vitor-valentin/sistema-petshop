@@ -121,6 +121,10 @@ header .config-box {
     color: black;
 }
 
+.config-box .hiding {
+    display: none;
+}
+
 .sidebar {
     overflow: hidden;
     width: 220px;
@@ -323,6 +327,11 @@ li.active {
     background-color: #007bff;
     color: white;
     border-color: #007bff;
+}
+
+.pagination .active.dark {
+    background-color: #004c9d;
+    border-color: #004c9d;
 }
 
 .login-container {

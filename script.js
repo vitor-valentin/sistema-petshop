@@ -1,3 +1,26 @@
+if (window.location.protocol === "file:") {
+    alert(
+        "Este projeto precisa ser executado em um servidor (ex: Live Server, Apache, etc).\nPor favor execute o arquivo 'start-sistema-petshop.exe' para iniciar um servidor para testes."
+    );
+}
+
+(async () => {
+    if (!JSON.parse(localStorage.getItem("vpFirstRun"))) {
+        try {
+            const dbModule = await import("./exampleDatabase.js");
+
+            if (dbModule.initDatabase) {
+                dbModule.initDatabase();
+            }
+
+            localStorage.setItem("vpFirstRun", "true");
+            console.log("Banco de dados inicial carregado.");
+        } catch (err) {
+            console.error("Erro ao carregar o banco de dados inicial:", err);
+        }
+    }
+})();
+
 const sidebarPlaceholder = document.getElementById("sidebar-placeholder");
 const headerPlaceholder = document.getElementById("header-placeholder");
 const pagePlaceholder = document.getElementById("page-placeholder");
@@ -45,7 +68,10 @@ function loadSite() {
 
     let pagePromise, sidebarPromise;
 
-    if (getUrlParams().has(`${getUrlWithoutParameters()}?controlPanel`)) {
+    if (
+        getUrlParams().has(`${getUrlWithoutParameters()}?controlPanel`) &&
+        checkPermissionLevel()
+    ) {
         pagePromise = fetch("pages/usuarios.html")
             .then((response) => {
                 if (!response.ok) {
@@ -70,6 +96,12 @@ function loadSite() {
                 sidebarPlaceholder.innerHTML = data;
             });
     } else {
+        if (
+            getUrlParams().has(`${getUrlWithoutParameters()}?controlPanel`) &&
+            !checkPermissionLevel()
+        ) {
+            window.location.href = getUrlWithoutParameters();
+        }
         pagePromise = fetch("pages/clientes.html")
             .then((response) => {
                 if (!response.ok) {
@@ -93,7 +125,6 @@ function loadSite() {
             });
     }
 
-    // Espera todos os fetches antes de continuar
     return Promise.all([headerPromise, pagePromise, sidebarPromise]);
 }
 
@@ -162,7 +193,7 @@ function loginPage() {
 
 function logout() {
     localStorage.setItem("vpLogin", JSON.stringify([]));
-    location.reload();
+    window.location.href = getUrlWithoutParameters();
 }
 
 function capitalizeFirstLetter(string) {
@@ -288,6 +319,136 @@ function permissionLevelTranscript(level) {
     else return "Total";
 }
 
+function checkPermissionLevel() {
+    const cargos = JSON.parse(localStorage.getItem("vpCargos"));
+
+    const loginInfo = validLogins().filter(
+        (vl) =>
+            vl.username === login().username && vl.password === login().password
+    )[0];
+
+    const permissionLvl = cargos.filter((c) => c.id === loginInfo.roleId)[0]
+        .permissionLevel;
+
+    if (permissionLvl < 2) {
+        return false;
+    }
+
+    return true;
+}
+
+function isValidPhone(phone) {
+    const digits = phone.replace(/\D/g, "");
+    return digits.length === 11;
+}
+
+function cascadeDelete(entityKey, id) {
+    if (entityKey === "clientes") {
+        let pets = JSON.parse(localStorage.getItem("vpPets")) || [];
+        pets = pets.filter((p) => p.idCliente !== id);
+        localStorage.setItem("vpPets", JSON.stringify(pets));
+
+        let vendas = JSON.parse(localStorage.getItem("vpVendas")) || [];
+        vendas = vendas.filter((v) => v.idCliente !== id);
+        localStorage.setItem("vpVendas", JSON.stringify(vendas));
+    }
+
+    if (entityKey === "pets") {
+        let vendas = JSON.parse(localStorage.getItem("vpVendas")) || [];
+        vendas = vendas.filter((v) => v.idPet !== id);
+        localStorage.setItem("vpVendas", JSON.stringify(vendas));
+    }
+
+    if (entityKey === "produtos") {
+        let vendas = JSON.parse(localStorage.getItem("vpVendas")) || [];
+        vendas = vendas
+            .map((venda) => {
+                let changed = false;
+
+                if (venda.products) {
+                    for (const key in venda.products) {
+                        if (venda.products[key].id == id) {
+                            delete venda.products[key];
+                            changed = true;
+                        }
+                    }
+                }
+
+                if (changed) {
+                    venda.totalValue = recalculateVendaTotal(venda);
+                }
+
+                return venda;
+            })
+            .filter((venda) => {
+                const hasProducts =
+                    venda.products && Object.keys(venda.products).length > 0;
+                const hasServices =
+                    venda.services && Object.keys(venda.services).length > 0;
+                return hasProducts || hasServices;
+            });
+
+        localStorage.setItem("vpVendas", JSON.stringify(vendas));
+    }
+
+    if (entityKey === "servicos") {
+        let vendas = JSON.parse(localStorage.getItem("vpVendas")) || [];
+        vendas = vendas
+            .map((venda) => {
+                let changed = false;
+
+                if (venda.services) {
+                    for (const key in venda.services) {
+                        if (venda.services[key].id == id) {
+                            delete venda.services[key];
+                            changed = true;
+                        }
+                    }
+                }
+
+                if (changed) {
+                    venda.totalValue = recalculateVendaTotal(venda);
+                }
+
+                return venda;
+            })
+            .filter((venda) => {
+                const hasProducts =
+                    venda.products && Object.keys(venda.products).length > 0;
+                const hasServices =
+                    venda.services && Object.keys(venda.services).length > 0;
+                return hasProducts || hasServices;
+            });
+
+        localStorage.setItem("vpVendas", JSON.stringify(vendas));
+    }
+
+    if (entityKey === "cargos") {
+        let users = validLogins();
+        users = users.filter((u) => u.roleId !== id);
+        localStorage.setItem("vpValidLogins", JSON.stringify(users));
+    }
+}
+
+function recalculateVendaTotal(venda) {
+    const produtos = JSON.parse(localStorage.getItem("vpProdutos")) || [];
+    const servicos = JSON.parse(localStorage.getItem("vpServicos")) || [];
+
+    let total = 0;
+
+    Object.values(venda.products || {}).forEach((prod) => {
+        const produto = produtos.find((p) => p.id == prod.id);
+        if (produto) total += produto.price * prod.amount;
+    });
+
+    Object.values(venda.services || {}).forEach((serv) => {
+        const servico = servicos.find((s) => s.id == serv.id);
+        if (servico) total += servico.price;
+    });
+
+    return total;
+}
+
 function initializeCode() {
     const sidebarBtn = document.querySelector(".menu");
     const headerMenu = document.querySelector("header");
@@ -297,6 +458,7 @@ function initializeCode() {
     const closeBtn = vendaDetails.querySelector(".close-btn");
     const userConfigOpenBtn = document.querySelector(".user i");
     const controlPanelBtn = document.getElementById("controlPanel");
+    const returnControlPanel = document.getElementById("returnControlPanel");
 
     var sidebar = document.querySelector(".sidebar");
     var sidebarBtns = document.querySelectorAll("#sidebarBtn");
@@ -339,21 +501,25 @@ function initializeCode() {
     renderTable(tableOptions);
     renderPagination();
 
-    if (getUrlParams().has(`${getUrlWithoutParameters()}?controlPanel`)) {
-        pageTitle.textContent = "Usuarios";
+    if (
+        getUrlParams().has(`${getUrlWithoutParameters()}?controlPanel`) &&
+        checkPermissionLevel()
+    ) {
+        pageTitle.textContent = "Usuários";
         updateSectionCards("Usuarios");
+        toggleControlPanelBtn();
+        toggleReturnBtn();
     } else {
         pageTitle.textContent = "Clientes";
         updateSectionCards("Clientes");
     }
 
-    responsiveWindow();
+    if (!checkPermissionLevel()) toggleControlPanelBtn();
 
-    checkPermissionLevel();
+    responsiveWindow();
 
     function responsiveWindow() {
         if (window.innerWidth < 980) {
-            console.log("oi");
             if (!sidebar.classList.contains("hidden")) toggleSideBar();
             headerMenu.classList.add("full");
             pagePlaceholder.querySelector(".content").classList.add("full");
@@ -383,28 +549,28 @@ function initializeCode() {
         detailsTypeName.textContent = type;
         detailsTbody.innerHTML = "";
 
-        let count = 0;
-
-        Object.keys(dataArray).forEach((key) => {
+        Object.entries(dataArray).forEach(([key, value]) => {
             const tr = document.createElement("tr");
-            const innerData = retrieveVendaData(type, dataArray[key].id);
+            const innerData = retrieveVendaData(type, value.id);
+
+            if (!innerData) return;
 
             Object.keys(innerData).forEach((innerKey) => {
-                if (innerKey != "id") {
+                if (innerKey !== "id") {
                     const td = document.createElement("td");
 
                     if (innerKey === "price") {
                         td.textContent = formatReal(innerData[innerKey]);
                     } else if (innerKey === "stock") {
-                        td.textContent = dataArray[count].amount;
+                        td.textContent = value.amount;
                     } else {
                         td.textContent = innerData[innerKey];
                     }
+
                     tr.appendChild(td);
                 }
             });
 
-            count++;
             detailsTbody.appendChild(tr);
         });
     }
@@ -505,7 +671,7 @@ function initializeCode() {
                     tr.appendChild(firstTd);
 
                     td.textContent = permissionLvl;
-                }else if (key === "permissionLevel") {
+                } else if (key === "permissionLevel") {
                     var permLvl = permissionLevelTranscript(item[key]);
                     td.textContent = permLvl;
                 } else if (pageName === "Produtos" && key === "stock") {
@@ -570,7 +736,10 @@ function initializeCode() {
 
     function renderPagination() {
         const pageName = pagePlaceholder.querySelector(".content").id;
-        const data = pageName === "Usuarios" ? validLogins() : JSON.parse(localStorage.getItem(`vp${pageName}`)) || [];
+        const data =
+            pageName === "Usuarios"
+                ? validLogins()
+                : JSON.parse(localStorage.getItem(`vp${pageName}`)) || [];
         const totalPages = Math.ceil(data.length / rowsPerPage);
 
         paginationContainer.innerHTML = "";
@@ -592,6 +761,8 @@ function initializeCode() {
             const btn = document.createElement("button");
             btn.textContent = i;
             if (i === currentPage) btn.classList.add("active");
+            if (getUrlParams().has(`${getUrlWithoutParameters()}?controlPanel`))
+                btn.classList.add("dark");
             btn.addEventListener("click", () => {
                 currentPage = i;
                 tableOptions.page = currentPage;
@@ -637,10 +808,13 @@ function initializeCode() {
             servicos: "totalServices",
             pets: "registeredPets",
             usuarios: "registeredUsers",
-            cargos: "registeredRoles"
+            cargos: "registeredRoles",
         };
 
-        let value = `${data.length} ${pageName}`;
+        let showingName = pageName === "Usuarios" ? "Usuários" : pageName;
+        showingName = pageName === "Servicos" ? "Serviços" : pageName;
+
+        let value = `${data.length} ${showingName}`;
         updateDashboardCard(countDashboards[pageName.toLowerCase()], value);
     }
 
@@ -788,14 +962,62 @@ function initializeCode() {
                 );
                 break;
             case "Usuarios":
+                const [partialPermCount, totalPermCount] =
+                    getAmountUsersPerPermissionLvl();
+                updateDashboardCard(
+                    "usersPartialPermission",
+                    `${partialPermCount} Usuário(s)`
+                );
+                updateDashboardCard(
+                    "usersTotalPermission",
+                    `${totalPermCount} Usuário(s)`
+                );
+                break;
+            case "Cargos":
+                const [rolesPartialPermCount, rolesTotalPermCount] =
+                    getAmountRolesPerPermissionLvl();
+                updateDashboardCard(
+                    "rolesPartialPermission",
+                    `${rolesPartialPermCount} Cargo(s)`
+                );
+                updateDashboardCard(
+                    "rolesTotalPermission",
+                    `${rolesTotalPermCount} Cargo(s)`
+                );
                 break;
         }
     }
 
-    //TODO: FINISH THIS
-    function getAmountUsersPerPermissionLvl() {
-        const users = validLogins();
+    function getAmountRolesPerPermissionLvl() {
+        const rolesPartialPerm = JSON.parse(
+            localStorage.getItem("vpCargos")
+        ).filter((c) => c.permissionLevel === 1);
+        const rolesTotalPerm = JSON.parse(
+            localStorage.getItem("vpCargos")
+        ).filter((c) => c.permissionLevel === 2);
+        return [rolesPartialPerm.length, rolesTotalPerm.length];
+    }
 
+    function getAmountUsersPerPermissionLvl() {
+        const roles = JSON.parse(localStorage.getItem("vpCargos"));
+
+        var usersPartialPerm = 0;
+        var usersTotalPerm = 0;
+
+        validLogins().forEach((login) => {
+            var role = roles.find((r) => r.id === login.roleId);
+
+            switch (role.permissionLevel) {
+                case 2:
+                    usersTotalPerm++;
+                    break;
+                case 1:
+                    usersPartialPerm++;
+                    break;
+            }
+        });
+
+        return [usersPartialPerm, usersTotalPerm];
     }
 
     function calcMediumPetsClients() {
@@ -825,9 +1047,10 @@ function initializeCode() {
                 requestAnimationFrame(() => {
                     page = document.querySelector(".content");
                     var pTitle = capitalizeFirstLetter(redPage);
-                    if (redPage === "servicos") {
-                        pTitle = "Serviços";
-                    }
+
+                    if (redPage === "servicos") pTitle = "Serviços";
+                    if (redPage === "usuarios") pTitle = "Usuários";
+
                     pageTitle.textContent = pTitle;
 
                     paginationContainer = document.querySelector(".pagination");
@@ -857,8 +1080,78 @@ function initializeCode() {
     function submitFormLogic(entityKey, form, dataEdited) {
         if (!form) return;
 
+        if (["usuarios", "cargos"].includes(entityKey)) {
+            if (!checkPermissionLevel()) {
+                showPopup(
+                    "Você não tem permissão para executar essa ação.",
+                    "failure",
+                    2500
+                );
+                returnFromControlPanel();
+                return;
+            }
+        }
+
         const dataForm = new FormData(form);
         const data = Object.fromEntries(dataForm.entries());
+
+        if (data.cpf && !isValidCPF(data.cpf)) {
+            showPopup("CPF Inválido!", "failure", 2000);
+            return;
+        }
+
+        if (
+            (data.birthDate || data.soldDate) &&
+            !isValidDate(data.birthDate || data.soldDate)
+        ) {
+            showPopup(
+                "Data inválida. Use o formato dd/mm/aaaa.",
+                "failure",
+                2000
+            );
+            return;
+        }
+
+        if (data.phone && !isValidPhone(data.phone)) {
+            showPopup(
+                "Número de telefone inválido. Use o formato (99) 99999-9999.",
+                "failure",
+                2000
+            );
+            return;
+        }
+
+        if (
+            (data.price || data.totalValue) &&
+            !isValidMoney(data.price || data.totalValue)
+        ) {
+            showPopup(
+                "Informe um valor monetário válido maior que R$ 0,00.",
+                "failure",
+                2000
+            );
+            return;
+        }
+
+        const editId = form.getAttribute("data-edit-id");
+        var storageKey = `vp${capitalizeFirstLetter(entityKey)}`;
+        if (entityKey === "usuarios") storageKey = "vpValidLogins";
+        let registers = JSON.parse(localStorage.getItem(storageKey)) || [];
+
+        if (entityKey === "produtos") {
+            const stock = data.stock?.toString().trim();
+
+            const numericValue = parseInt(stock);
+
+            if (isNaN(numericValue) || numericValue <= 0) {
+                showPopup(
+                    "A quantidade em estoque deve ser maior que 0.",
+                    "failure",
+                    2000
+                );
+                return;
+            }
+        }
 
         if (entityKey === "vendas") {
             try {
@@ -937,40 +1230,6 @@ function initializeCode() {
             }
         }
 
-        if (data.cpf && !isValidCPF(data.cpf)) {
-            showPopup("CPF Inválido!", "failure", 2000);
-            return;
-        }
-
-        if (
-            (data.birthDate || data.soldDate) &&
-            !isValidDate(data.birthDate || data.soldDate)
-        ) {
-            showPopup(
-                "Data inválida. Use o formato dd/mm/aaaa.",
-                "failure",
-                2000
-            );
-            return;
-        }
-
-        if (
-            (data.price || data.totalValue) &&
-            !isValidMoney(data.price || data.totalValue)
-        ) {
-            showPopup(
-                "Informe um valor monetário válido maior que R$ 0,00.",
-                "failure",
-                2000
-            );
-            return;
-        }
-
-        const editId = form.getAttribute("data-edit-id");
-        var storageKey = `vp${capitalizeFirstLetter(entityKey)}`;
-        if (entityKey === "usuarios") storageKey = "vpValidLogins";
-        let registers = JSON.parse(localStorage.getItem(storageKey)) || [];
-
         if (data.price)
             data.price = parseFloat(
                 data.price
@@ -981,6 +1240,8 @@ function initializeCode() {
         if (data.totalValue) data.totalValue = parseFloat(data.totalValue);
         if (data.idCliente) data.idCliente = parseInt(data.idCliente);
         if (data.roleId) data.roleId = parseInt(data.roleId);
+        if (data.permissionLevel)
+            data.permissionLevel = parseInt(data.permissionLevel);
 
         if (entityKey == "vendas") delete data.nomeCliente;
         if (entityKey == "vendas") delete data.nomePet;
@@ -1044,8 +1305,33 @@ function initializeCode() {
             return;
         }
 
-        const storageKey = `vp${capitalizeFirstLetter(entityName)}`;
-        let registers = JSON.parse(localStorage.getItem(storageKey));
+        if (["usuarios", "cargos"].includes(entityName)) {
+            if (!checkPermissionLevel()) {
+                showPopup(
+                    "Você não tem permissão para executar essa ação.",
+                    "failure",
+                    2500
+                );
+                returnFromControlPanel();
+                return;
+            }
+        }
+
+        let storageKey = `vp${capitalizeFirstLetter(entityName)}`;
+        if (entityName === "usuarios") storageKey = "vpValidLogins";
+        let registers = JSON.parse(localStorage.getItem(storageKey)) || [];
+
+        if (
+            entityName === "usuarios" &&
+            registers.filter((r) => r.id === id)[0].id === login().loginId
+        ) {
+            showPopup(
+                "Não é possível deletar sua própria conta!",
+                "failure",
+                2000
+            );
+            return;
+        }
 
         showConfirm({
             message: "Tem certeza que deseja excluir este registros?",
@@ -1057,7 +1343,16 @@ function initializeCode() {
             registers = registers.filter((item) => item.id !== id);
             localStorage.setItem(storageKey, JSON.stringify(registers));
 
+            const totalPages = Math.ceil(registers.length / rowsPerPage);
+            if (currentPage > totalPages) {
+                currentPage = Math.max(1, totalPages);
+                tableOptions.page = currentPage;
+            }
+
+            cascadeDelete(entityName, id);
+
             showPopup("Registro excluído com sucesso!", "success", "1000");
+            updateSectionCards(capitalizeFirstLetter(entityName));
             renderTable(tableOptions);
             renderPagination();
         });
@@ -1121,22 +1416,14 @@ function initializeCode() {
         });
     }
 
-    function checkPermissionLevel() {
-        const cargos = JSON.parse(localStorage.getItem("vpCargos"));
+    function toggleControlPanelBtn() {
+        const controlPanel = document.getElementById("controlPanel");
+        controlPanel.classList.toggle("hiding");
+    }
 
-        const loginInfo = validLogins().filter(
-            (vl) =>
-                vl.username === login().username &&
-                vl.password === login().password
-        )[0];
-
-        const permissionLvl = cargos.filter((c) => c.id === loginInfo.roleId)[0]
-            .permissionLevel;
-
-        if (permissionLvl < 2) {
-            const controlPanel = document.getElementById("controlPanel");
-            controlPanel.remove();
-        }
+    function toggleReturnBtn() {
+        const returnBtn = document.getElementById("returnControlPanel");
+        returnBtn.classList.toggle("hiding");
     }
 
     function getCargoAndPermissionLvlById(id) {
@@ -1353,13 +1640,20 @@ function initializeCode() {
             container.className = "dynamic-item";
 
             const select = document.createElement("select");
+
+            const produtoOriginal = produtos.find((p) => p.id == id);
+
             produtos.forEach((p) => {
-                if (p.stock > 0) {
+                if (
+                    p.stock > 0 ||
+                    (produtoOriginal && p.id == produtoOriginal.id)
+                ) {
                     const opt = document.createElement("option");
                     opt.value = p.id;
                     opt.textContent = `${p.name} - ${formatReal(
                         p.price
                     )} (Estoque: ${p.stock})`;
+
                     if (id && p.id == id) opt.selected = true;
                     select.appendChild(opt);
                 }
@@ -1378,6 +1672,7 @@ function initializeCode() {
             qty.type = "number";
             qty.min = 1;
             qty.value = qtd || 1;
+
             qty.addEventListener("input", () => {
                 if (qty.value < 1) qty.value = 1;
                 enforceStockLimit(qty, select);
@@ -1672,6 +1967,50 @@ function initializeCode() {
             .then(() => {
                 changePage("usuarios");
                 toggleConfigBoxUser();
+                toggleControlPanelBtn();
+                toggleReturnBtn();
+            })
+            .catch((error) => {
+                console.error(`Erro: ${error}`);
+            });
+    }
+
+    function returnFromControlPanel() {
+        Promise.all([
+            fetch("templates/sidebar.html")
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error(
+                            "Erro ao carregar a sidebar do painel de controle."
+                        );
+                    }
+                    return response.text();
+                })
+                .then((data) => {
+                    sidebarPlaceholder.innerHTML = data;
+                    sidebar = document.querySelector(".sidebar");
+                    sidebarBtns = document.querySelectorAll(
+                        ".sidebar #sidebarBtn"
+                    );
+
+                    sidebarBtns.forEach((btn) => {
+                        btn.addEventListener("click", () => {
+                            let redirectPage = btn.getAttribute("redirectPage");
+                            changePage(redirectPage, btn);
+
+                            removeCurrActiveBtnClass();
+                            btn.classList.add("active");
+                        });
+                    });
+
+                    window.location.href = getUrlWithoutParameters();
+                }),
+        ])
+            .then(() => {
+                changePage("clientes");
+                toggleConfigBoxUser();
+                toggleControlPanelBtn();
+                toggleReturnBtn();
             })
             .catch((error) => {
                 console.error(`Erro: ${error}`);
@@ -1777,5 +2116,9 @@ function initializeCode() {
 
     controlPanelBtn.addEventListener("click", () => {
         changeToControlPanel();
+    });
+
+    returnControlPanel.addEventListener("click", () => {
+        returnFromControlPanel();
     });
 }

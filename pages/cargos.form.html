@@ -1,0 +1,38 @@
+<div class="content">
+    <div class="form-box">
+        <h2 id="form-title">Cadastrar Novo Cargo</h2>
+
+        <form id="data-form">
+            <div class="input-box">
+                <label for="name">Cargo</label>
+                <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    placeholder="Digite o nome do cargo"
+                    required
+                />
+            </div>
+
+            <div class="input-box">
+                <label for="permissionLevel">Sexo</label>
+                <select id="permissionLevel" name="permissionLevel" required>
+                    <option value="">Selecione</option>
+                    <option value="1">Parcial</option>
+                    <option value="2">Total</option>
+                </select>
+            </div>
+
+            <div class="form-buttons">
+                <button type="submit" class="btn btn-primary dark">Salvar</button>
+                <button
+                    type="button"
+                    class="btn btn-danger dark"
+                    onclick="changePage('cargos')"
+                >
+                    Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
